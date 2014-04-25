@@ -22,22 +22,20 @@
 
 #include "Simulation.h"
 
-#include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/compressed_sparse_row_graph.hpp>
 #include <boost/random/exponential_distribution.hpp>
 #include <boost/random/taus88.hpp>
 #include <boost/random/uniform_int_distribution.hpp>
 #include <stddef.h>
 #include <cmath>
 #include <utility>
-#include <iostream>
 
 Simulation::~Simulation() {
 }
 
-Simulation::Simulation(const NetworkGraph& topology, const unsigned int nSlots,
-		ProvisioningScheme& p):
+Simulation::Simulation(const NetworkGraph& topology, ProvisioningScheme& p):
 				topology(topology),
-				state(topology,nSlots),
+				state(topology),
 				provision(p),
 				count(0)
 {}

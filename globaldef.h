@@ -23,7 +23,13 @@
 #ifndef GLOBALDEF_H_
 #define GLOBALDEF_H_
 
-#define BANDWIDTH_UNIT 0.5
+#define BANDWIDTH_UNIT 12.5
 #define DISTANCE_UNIT 0.5
+#define NUM_SLOTS 320
+
+typedef unsigned int specIndex_t;
+typedef unsigned int nodeIndex_t;
+typedef unsigned int linkIndex_t;
+typedef unsigned long simtime_t;
 
 #endif /* GLOBALDEF_H_ */

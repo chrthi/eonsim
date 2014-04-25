@@ -39,16 +39,14 @@ int main(int argc, char **argv) {
 	timespec tp1, tp2;
 	clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&tp1);
 
-	NetworkGraph g;
-	{
-		std::ifstream in("input/input_att_d.txt");
-		g.loadFromMatrix(in);
-	}
+	std::ifstream in("input/input_att_d.txt");
+	NetworkGraph g=NetworkGraph::loadFromMatrix(in);
+	in.close();
 
 	//for parameters...
 	{
 		KsqHybridCostProvisioning p(5,5);
-		Simulation s(g,400,p);
+		Simulation s(g,p);
 		const StatCounter &stats=s.run(1000,10000,500,1000);
 		std::cout<<stats;
 	}

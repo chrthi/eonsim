@@ -37,6 +37,8 @@ Provisioning KsqHybridCostProvisioning::operator ()(
 		const Request& r) {
 	Provisioning result;
 	///@todo implement k-squared provisioning
+
+
 	result.bandwidth=r.bandwidth;
 	return result;
 }

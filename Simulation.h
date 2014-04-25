@@ -54,7 +54,7 @@ public:
 
 class Simulation {
 public:
-	Simulation(const NetworkGraph &topology,const unsigned int nSlots, ProvisioningScheme &p);
+	Simulation(const NetworkGraph &topology, ProvisioningScheme &p);
 	const StatCounter &run(unsigned long itersDiscard, unsigned long itersTotal,
 			unsigned int avg_interarrival,unsigned int avg_holding);
 	~Simulation();

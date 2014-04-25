@@ -23,27 +23,33 @@
 #ifndef NETWORKGRAPH_H_
 #define NETWORKGRAPH_H_
 
-#include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/compressed_sparse_row_graph.hpp>
 #include <boost/graph/graph_selectors.hpp>
 #include <boost/graph/properties.hpp>
 #include <boost/pending/property.hpp>
 #include <fstream>
+#include <utility>
+#include <vector>
 
 class NetworkGraph:
-		public boost::adjacency_list<
-		boost::vecS, //Container type to store outgoing edges of each vertex
-		boost::vecS, //Container type to store vertices
+		public boost::compressed_sparse_row_graph<
 		boost::directedS, //Graph type: Directed, Undirected, Bidirectional.
 		boost::no_property, //Vertex properties
 		boost::property<boost::edge_weight_t,unsigned int>, //Edge properties
 		boost::no_property, //Graph properties
-		boost::vecS //Container type to store the edge list of the graph
+		unsigned int, //vertex index type
+		unsigned int  //edge index type
 		>
 {
 public:
-	NetworkGraph();
-	void loadFromMatrix(std::istream &s);
+	static NetworkGraph loadFromMatrix(std::istream &s);
 	virtual ~NetworkGraph();
+private:
+	typedef std::vector<std::pair<unsigned int, unsigned int> >::iterator edge_iterator;
+	typedef std::vector<unsigned int>::iterator link_distance_iterator;
+	NetworkGraph(edge_iterator edge_begin, edge_iterator edge_end,link_distance_iterator ep_iter,
+            vertices_size_type numverts,
+            edges_size_type numedges);
 };
 
 #endif /* NETWORKGRAPH_H_ */

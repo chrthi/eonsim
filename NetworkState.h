@@ -23,10 +23,12 @@
 #ifndef NETWORKSTATE_H_
 #define NETWORKSTATE_H_
 
-#include <boost/dynamic_bitset/dynamic_bitset.hpp>
+#include <boost/graph/graph_traits.hpp>
+#include <bitset>
 #include <vector>
 
-//#include "Simulation.h"
+#include "globaldef.h"
+#include "NetworkGraph.h"
 
 struct Provisioning;
 
@@ -34,14 +36,24 @@ class NetworkGraph;
 
 class NetworkState {
 public:
-	NetworkState(const NetworkGraph &topology, unsigned int nSlots);
+	NetworkState(const NetworkGraph &topology);
 	virtual ~NetworkState();
 	void provision(const Provisioning &p);
 	void terminate(const Provisioning &p);
+	std::bitset<NUM_SLOTS> bkpAvailability(
+			const std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor> &priPath,
+			const boost::graph_traits<NetworkGraph>::edge_descriptor bkpLink) const;
 private:
-	std::vector<boost::dynamic_bitset<> > primaryUse;
-	std::vector<boost::dynamic_bitset<> > anyUse;
-	std::vector<std::vector<boost::dynamic_bitset<> > > sharing;
+	NetworkState(const NetworkState &n);
+	linkIndex_t numLinks;
+	std::bitset<NUM_SLOTS> *primaryUse;
+	std::bitset<NUM_SLOTS> *anyUse;
+	/**
+	 * This is a two-dimensional array of size numLinks^2.
+	 * The bitset at sharing[i*numLinks+j] defines
+	 * the backup spectrum in link i that protects primaries in j.
+	 */
+	std::bitset<NUM_SLOTS> *sharing;
 };
 
 #endif /* NETWORKSTATE_H_ */
