@@ -32,16 +32,16 @@
 using namespace boost;
 
 NetworkGraph::NetworkGraph(edge_iterator edge_begin, edge_iterator edge_end,
-		link_distance_iterator ep_iter, vertices_size_type numverts,
-		edges_size_type numedges):
+		vertices_size_type numverts, edges_size_type numedges, distance_t *dists):
 		boost::compressed_sparse_row_graph<
 		boost::directedS, //Graph type: Directed, Undirected, Bidirectional.
 		boost::no_property, //Vertex properties
-		boost::property<boost::edge_weight_t,unsigned int>, //Edge properties
+		boost::no_property, //Edge properties
 		boost::no_property, //Graph properties
-		unsigned int, //vertex index type
-		unsigned int  //edge index type
-		>(edges_are_sorted,edge_begin,edge_end,ep_iter,numverts,numedges)
+		nodeIndex_t, //vertex index type
+		linkIndex_t  //edge index type
+		>(edges_are_sorted,edge_begin,edge_end,numverts,numedges),
+		dists(dists)
 {
 }
 
@@ -49,26 +49,31 @@ NetworkGraph::~NetworkGraph() {
 }
 
 NetworkGraph NetworkGraph::loadFromMatrix(std::istream &s) {
-	unsigned int n, l;
+	vertices_size_type n;
+	edges_size_type l;
 	s>>n>>l;
+	l*=2; //we treat the two directions as separate edges
 	s.ignore(2); // skip the (cr)lf after the link count
-	for(unsigned int i=0; i<n; ++i) {
+	for(nodeIndex_t i=0; i<n; ++i) {
 		s.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
 	}
-	std::vector<std::pair<unsigned int, unsigned int> > edges;
+	std::vector<std::pair<nodeIndex_t, nodeIndex_t> > edges;
 	edges.reserve(l);
-	std::vector<unsigned int> lengths;
+	distance_t *dists=new distance_t[l];
+	std::vector<nodeIndex_t> lengths;
 	lengths.reserve(l);
-	for(unsigned int i=0; i<n; ++i) {
-		for(unsigned int k=0; k<n; ++k) {
+	size_t li=0;
+	for(nodeIndex_t i=0; i<n; ++i) {
+		for(nodeIndex_t k=0; k<n; ++k) {
 			double d;
 			s>>d;
 			if(d>0.0) {// if(std::isnormal(d)){
-				edges.push_back(std::pair<unsigned int, unsigned int>(i,k));
-				lengths.push_back(lrint(d/DISTANCE_UNIT));
+				edges.push_back(std::pair<nodeIndex_t, nodeIndex_t>(i,k));
+				dists[li++]=lrint(d/DISTANCE_UNIT);
 			}
 		}
 	}
-	return NetworkGraph(edges.begin(),edges.end(),lengths.begin(),n,l);
+
+	return NetworkGraph(edges.begin(),edges.end(),n,l,dists);
 }
 

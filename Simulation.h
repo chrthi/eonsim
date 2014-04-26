@@ -39,6 +39,7 @@ struct Request{
 	boost::graph_traits<NetworkGraph>::vertex_descriptor source, dest;
 	unsigned int bandwidth;
 };
+
 struct Provisioning{
 	std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor> priPath;
 	std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor> bkpPath;
@@ -46,6 +47,7 @@ struct Provisioning{
 	unsigned int bkpSpecBegin, bkpSpecEnd;
 	unsigned int bandwidth;
 };
+
 class ProvisioningScheme{
 public:
 	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const Request &r) =0;

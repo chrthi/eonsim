@@ -1,5 +1,5 @@
 /**
- * @file globaldef.h
+ * @file ShortestFFLFProvisioning.h
  *
  */
 
@@ -20,17 +20,19 @@
  * along with SPP EON Simulator.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef GLOBALDEF_H_
-#define GLOBALDEF_H_
+#ifndef SHORTESTFFLFPROVISIONING_H_
+#define SHORTESTFFLFPROVISIONING_H_
 
-#define BANDWIDTH_UNIT 12.5
-#define DISTANCE_UNIT 2.5
-#define NUM_SLOTS 320
+#include "../NetworkState.h"
+#include "../Simulation.h"
 
-typedef unsigned int specIndex_t;
-typedef size_t nodeIndex_t;
-typedef size_t linkIndex_t;
-typedef unsigned long simtime_t;
-typedef unsigned int distance_t;
+struct Request;
 
-#endif /* GLOBALDEF_H_ */
+class ShortestFFLFProvisioning: public ProvisioningScheme {
+public:
+	ShortestFFLFProvisioning();
+	virtual ~ShortestFFLFProvisioning();
+	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const Request &r);
+};
+
+#endif /* SHORTESTFFLFPROVISIONING_H_ */

@@ -22,11 +22,13 @@
 
 #include <sys/time.h>
 #include <ctime>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 
 #include "NetworkGraph.h"
+#include "NetworkState.h"
 #include "provisioning_schemes/KsqHybridCostProvisioning.h"
+#include "provisioning_schemes/ShortestFFLFProvisioning.h"
 #include "Simulation.h"
 #include "StatCounter.h"
 
@@ -42,6 +44,14 @@ int main(int argc, char **argv) {
 	std::ifstream in("input/input_att_d.txt");
 	NetworkGraph g=NetworkGraph::loadFromMatrix(in);
 	in.close();
+
+	ShortestFFLFProvisioning tst;
+	Request r;
+	NetworkState s(g);
+	r.source=3;
+	r.dest=13;
+	tst(g,s,r);
+	return 0;
 
 	//for parameters...
 	{
