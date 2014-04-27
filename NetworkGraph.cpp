@@ -22,16 +22,22 @@
 
 #include "NetworkGraph.h"
 
+#include <boost/graph/detail/compressed_sparse_row_struct.hpp>
+#include <boost/graph/dijkstra_shortest_paths.hpp>
+#include <boost/graph/named_function_params.hpp>
+#include <boost/graph/properties.hpp>
+#include <boost/property_map/property_map.hpp>
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <iterator>
 #include <limits>
 
-#include "globaldef.h"
+//#include "globaldef.h"
 
 using namespace boost;
 
-NetworkGraph::NetworkGraph(edge_iterator edge_begin, edge_iterator edge_end,
+NetworkGraph::NetworkGraph(edgeIterator edge_begin, edgeIterator edge_end,
 		vertices_size_type numverts, edges_size_type numedges, distance_t *dists):
 		boost::compressed_sparse_row_graph<
 		boost::directedS, //Graph type: Directed, Undirected, Bidirectional.
@@ -41,11 +47,12 @@ NetworkGraph::NetworkGraph(edge_iterator edge_begin, edge_iterator edge_end,
 		nodeIndex_t, //vertex index type
 		linkIndex_t  //edge index type
 		>(edges_are_sorted,edge_begin,edge_end,numverts,numedges),
-		dists(dists)
+		link_lengths(dists)
 {
 }
 
 NetworkGraph::~NetworkGraph() {
+	delete[] link_lengths;
 }
 
 NetworkGraph NetworkGraph::loadFromMatrix(std::istream &s) {
@@ -77,3 +84,46 @@ NetworkGraph NetworkGraph::loadFromMatrix(std::istream &s) {
 	return NetworkGraph(edges.begin(),edges.end(),n,l,dists);
 }
 
+NetworkGraph::DijkstraData::DijkstraData(nodeIndex_t v, linkIndex_t e):
+		weights(new distance_t[e]),
+		dists(new distance_t[v]),
+		preds(new vertex_descriptor[v]),
+		colors(new unsigned char[v])
+{
+}
+
+NetworkGraph::DijkstraData::~DijkstraData() {
+	delete[] colors;
+	delete[] preds;
+	delete[] dists;
+	delete[] weights;
+}
+
+std::vector<NetworkGraph::edge_descriptor> NetworkGraph::dijkstra(
+		vertex_descriptor s, vertex_descriptor d,
+		const DijkstraData& data) const {
+	boost::dijkstra_shortest_paths(
+			*this,
+			s,
+			weight_map(make_iterator_property_map(data.weights,get(edge_index,*this)))
+			.predecessor_map(make_iterator_property_map(data.preds,get(vertex_index,*this)))
+			.distance_map(make_iterator_property_map(data.dists,get(vertex_index,*this)))
+			.color_map(make_iterator_property_map(data.colors,get(vertex_index,*this)))
+	);
+	std::vector<edge_descriptor> r;
+	if(d==data.preds[d]) return r;
+	for(vertex_descriptor v=d; v!=s; ) {
+		std::pair<edge_descriptor,bool> e=edge(data.preds[v],v,*this);
+		if(!e.second || e.first.src==v) throw int(42);
+		r.push_back(e.first);
+		v=e.first.src;
+	}
+	std::reverse(r.begin(),r.end());
+
+	/*for(std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor>::iterator it=result.priPath.begin();
+			it!=result.priPath.end(); ++it)
+		std::cout << it->src<<"-";
+	std::cout<<r.dest<<" ("<<dists[r.dest]<<')'<<std::endl;*/
+
+	return r;
+}

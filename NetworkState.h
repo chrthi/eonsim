@@ -40,20 +40,25 @@ public:
 	virtual ~NetworkState();
 	void provision(const Provisioning &p);
 	void terminate(const Provisioning &p);
-	std::bitset<NUM_SLOTS> bkpAvailability(
+	typedef std::bitset<NUM_SLOTS> spectrum_bits;
+	spectrum_bits priAvailability(const std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor> &priPath) const;
+	spectrum_bits bkpAvailability(
 			const std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor> &priPath,
 			const boost::graph_traits<NetworkGraph>::edge_descriptor bkpLink) const;
+	spectrum_bits bkpAvailability(
+			const std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor> &priPath,
+			const std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor> &bkpPath) const;
 private:
 	NetworkState(const NetworkState &n);
 	linkIndex_t numLinks;
-	std::bitset<NUM_SLOTS> *primaryUse;
-	std::bitset<NUM_SLOTS> *anyUse;
+	spectrum_bits *primaryUse;
+	spectrum_bits *anyUse;
 	/**
 	 * This is a two-dimensional array of size numLinks^2.
 	 * The bitset at sharing[i*numLinks+j] defines
 	 * the backup spectrum in link i that protects primaries in j.
 	 */
-	std::bitset<NUM_SLOTS> *sharing;
+	spectrum_bits *sharing;
 };
 
 #endif /* NETWORKSTATE_H_ */

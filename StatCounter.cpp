@@ -26,6 +26,7 @@
 #include <algorithm>
 
 #include "globaldef.h"
+#include "Simulation.h"
 
 StatCounter::StatCounter(const unsigned long discard) :
 	discard(discard),
@@ -48,10 +49,10 @@ StatCounter::~StatCounter() {
  */
 void StatCounter::reset(const unsigned long discard) {
 	this->discard=discard;
-	std::fill(nBlockings,nBlockings+EVENT_MAX+1,0UL);
+	std::fill(nBlockings,nBlockings+Provisioning::SUCCESS+1,0UL);
 	nProvisioned=0;
 	nTerminated=0;
-	std::fill(bwBlocked,bwBlocked+EVENT_MAX+1,0.0);
+	std::fill(bwBlocked,bwBlocked+Provisioning::SUCCESS+1,0.0);
 	bwProvisioned=0;
 	bwTerminated=0;
 }
@@ -64,26 +65,21 @@ void StatCounter::reset(const unsigned long discard) {
  * @param reason The type of event that shall be counted
  * @param bandwidth The requested amount of bandwidth of this connection
  */
-void StatCounter::countBlocking(const blockreason_t reason, unsigned long bandwidth) {
-	if(reason>EVENT_MAX) return;
+void StatCounter::countProvisioning(const Provisioning::state_t state, bandwidth_t bandwidth) {
 	if(discard) {
 		--discard;
-	} else {
-		++nBlockings[reason];
-		this->bwBlocked[reason]+=bandwidth;
+		return;
 	}
-}
-
-void StatCounter::countProvisioning(unsigned long bandwidth) {
-	if(discard) {
-		--discard;
-	} else {
+	if(state==Provisioning::SUCCESS) {
 		++nProvisioned;
 		bwProvisioned+=bandwidth;
+	} else {
+		++nBlockings[state];
+		this->bwBlocked[state]+=bandwidth;
 	}
 }
 
-void StatCounter::countTermination(unsigned long bandwidth) {
+void StatCounter::countTermination(bandwidth_t bandwidth) {
 	if(!discard) {
 		++nTerminated;
 		bwTerminated+=bandwidth;
@@ -95,12 +91,13 @@ void StatCounter::countTermination(unsigned long bandwidth) {
  * This provides an iostream output operator so that event types can be
  * conveniently streamed into files or console output.
  */
-std::ostream& operator<<(std::ostream &o, const StatCounter::blockreason_t &e) {
+std::ostream& operator<<(std::ostream &o, const Provisioning::state_t &e) {
 	switch(e) {
-	case StatCounter::BLOCK_PRI_NOPATH: return o<<"Blocked (no primary path)";
-	case StatCounter::BLOCK_PRI_NOSPEC: return o<<"Blocked (no primary spec)";
-	case StatCounter::BLOCK_SEC_NOPATH: return o<<"Blocked (no backup path) ";
-	case StatCounter::BLOCK_SEC_NOSPEC: return o<<"Blocked (no backup spec) ";
+	case Provisioning::BLOCK_PRI_NOPATH: return o<<"Blocked (no primary path)";
+	case Provisioning::BLOCK_PRI_NOSPEC: return o<<"Blocked (no primary spec)";
+	case Provisioning::BLOCK_SEC_NOPATH: return o<<"Blocked (no backup path) ";
+	case Provisioning::BLOCK_SEC_NOSPEC: return o<<"Blocked (no backup spec) ";
+	default: return o;
 	}
 	return o;
 }
@@ -113,25 +110,25 @@ std::ostream& operator<<(std::ostream &o, const StatCounter::blockreason_t &e) {
 std::ostream& operator<<(std::ostream &o, const StatCounter &s) {
 	unsigned long events_sum=s.nProvisioned;
 	unsigned long bandwidth_sum=s.bwProvisioned;
-	for(int e=StatCounter::EVENT_MIN; e<StatCounter::EVENT_MAX; ++e) {
+	for(int e=0; e<Provisioning::SUCCESS; ++e) {
 		events_sum+=s.nBlockings[e];
 		bandwidth_sum+=s.bwBlocked[e];
 	}
-	for(int e=StatCounter::EVENT_MIN; e<=StatCounter::EVENT_MAX; ++e)
-		o << static_cast<StatCounter::blockreason_t>(e)
-		  << boost::format(": %4lu conns (%6.4f%%); %8.1f Gbps (%6.4f%%)") %
-		     s.nBlockings[e] % ((double)s.nBlockings[e]/events_sum) %
-		     (s.bwBlocked[e]*BANDWIDTH_UNIT) % ((double)s.bwBlocked[e]/bandwidth_sum)
+	for(int e=0; e<Provisioning::SUCCESS; ++e)
+		o << static_cast<Provisioning::state_t>(e)
+		  << boost::format(": %4lu conns (%6.3f%%); %8.1f Gbps (%6.3f%%)") %
+		     s.nBlockings[e] % (100.0*(double)s.nBlockings[e]/events_sum) %
+		     (s.bwBlocked[e]*SLOT_WIDTH) % (100.0*(double)s.bwBlocked[e]/bandwidth_sum)
 		  << std::endl;
 	o << "Provisioned successfully "
-	  << boost::format(": %4lu conns (%6.4f%%); %8.1f Gbps (%6.4f%%)") %
-		 s.nProvisioned % ((double)s.nProvisioned/events_sum) %
-		 (s.bwProvisioned*BANDWIDTH_UNIT) % ((double)s.bwProvisioned/bandwidth_sum)
+	  << boost::format(": %4lu conns (%6.3f%%); %8.1f Gbps (%6.3f%%)") %
+		 s.nProvisioned % (100.0*(double)s.nProvisioned/events_sum) %
+		 (s.bwProvisioned*SLOT_WIDTH) % (100.0*(double)s.bwProvisioned/bandwidth_sum)
 	  << std::endl;
 	o << "Terminated               "
-	  << boost::format(": %4lu conns (%6.4f%%); %8.1f Gbps (%6.4f%%)") %
-		 s.nTerminated % ((double)s.nTerminated/events_sum) %
-		 (s.bwTerminated*BANDWIDTH_UNIT) % ((double)s.bwTerminated/bandwidth_sum)
+	  << boost::format(": %4lu conns (%6.3f%%); %8.1f Gbps (%6.3f%%)") %
+		 s.nTerminated % (100.0*(double)s.nTerminated/events_sum) %
+		 (s.bwTerminated*SLOT_WIDTH) % (100.0*(double)s.bwTerminated/bandwidth_sum)
 	  << std::endl;
 	return o;
 }

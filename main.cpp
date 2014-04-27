@@ -39,28 +39,21 @@ static inline unsigned long timediff(const timespec &start, const timespec &end)
 
 int main(int argc, char **argv) {
 	timespec tp1, tp2;
-	clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&tp1);
 
 	std::ifstream in("input/input_att_d.txt");
 	NetworkGraph g=NetworkGraph::loadFromMatrix(in);
 	in.close();
 
-	ShortestFFLFProvisioning tst;
-	Request r;
-	NetworkState s(g);
-	r.source=3;
-	r.dest=13;
-	tst(g,s,r);
-	return 0;
-
 	//for parameters...
 	{
-		KsqHybridCostProvisioning p(5,5);
+		ShortestFFLFProvisioning p(g.getNumNodes(),g.getNumLinks());
+		//KsqHybridCostProvisioning p(5,5);
 		Simulation s(g,p);
-		const StatCounter &stats=s.run(1000,10000,500,1000);
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&tp1);
+		const StatCounter &stats=s.run(1000,100000,100,500000);
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&tp2);
 		std::cout<<stats;
 	}
-	clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&tp2);
 	std::cout<<std::setw(11)<<timediff(tp1,tp2)<<" ns"<<std::endl;
 }
 

@@ -32,9 +32,9 @@
 
 NetworkState::NetworkState(const NetworkGraph& topology) :
 numLinks(boost::num_edges(topology)),
-primaryUse(new std::bitset<NUM_SLOTS>[numLinks]),
-anyUse(new std::bitset<NUM_SLOTS>[numLinks]),
-sharing(new std::bitset<NUM_SLOTS>[numLinks*numLinks])
+primaryUse(new spectrum_bits[numLinks]),
+anyUse(new spectrum_bits[numLinks]),
+sharing(new spectrum_bits[numLinks*numLinks])
 {
 }
 
@@ -48,17 +48,17 @@ void NetworkState::provision(const Provisioning &p) {
 	typedef std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor>::const_iterator edgeIt;
 	for(edgeIt it=p.priPath.begin(); it!=p.priPath.end(); ++it) {
 		for(specIndex_t i=p.priSpecBegin;i<p.priSpecEnd;++i) {
-			primaryUse[it->idx].set(i,true);
-			anyUse[it->idx].set(i,true);
+			primaryUse[it->idx][i]=true;
+			anyUse[it->idx][i]=true;
 		}
 	}
 	for(edgeIt it=p.bkpPath.begin(); it!=p.bkpPath.end(); ++it)
-		for(specIndex_t i=p.priSpecBegin;i<p.priSpecEnd;++i)
-			anyUse[it->idx].set(i,true);
+		for(specIndex_t i=p.bkpSpecBegin;i<p.bkpSpecEnd;++i)
+			anyUse[it->idx][i]=true;
 	for(edgeIt itp=p.priPath.begin(); itp!=p.priPath.end(); ++itp)
 		for(edgeIt itb=p.bkpPath.begin(); itb!=p.bkpPath.end(); ++itb)
-			for(specIndex_t i=p.priSpecBegin;i<p.priSpecEnd;++i)
-				sharing[itp->idx*numLinks+itb->idx].set(i, true);
+			for(specIndex_t i=p.bkpSpecBegin;i<p.bkpSpecEnd;++i)
+				sharing[itp->idx*numLinks+itb->idx][i]=true;
 }
 
 void NetworkState::terminate(const Provisioning &p) {
@@ -72,7 +72,7 @@ void NetworkState::terminate(const Provisioning &p) {
 	//the primary links now do not share any backup here any more
 	for(edgeIt itb=p.bkpPath.begin(); itb!=p.bkpPath.end(); ++itb)
 		for(edgeIt itp=p.priPath.begin(); itp!=p.priPath.end(); ++itp)
-			for(specIndex_t i=p.priSpecBegin;i<p.priSpecEnd;++i)
+			for(specIndex_t i=p.bkpSpecBegin;i<p.bkpSpecEnd;++i)
 				sharing[itb->idx*numLinks+itp->idx].set(i, false);
 
 	/* On each previous backup link, construct the new backup spectrum
@@ -82,18 +82,40 @@ void NetworkState::terminate(const Provisioning &p) {
 	 */
 	for(edgeIt itb=p.bkpPath.begin(); itb!=p.bkpPath.end(); ++itb) {
 		anyUse[itb->idx]=primaryUse[itb->idx];
-		std::bitset<NUM_SLOTS> *shb=sharing+itb->idx*numLinks;
+		spectrum_bits * const shb=sharing+itb->idx*numLinks;
 		for(linkIndex_t i=0; i<numLinks; ++i)
 			anyUse[itb->idx]|=shb[i];
 	}
 }
 
-std::bitset<NUM_SLOTS> NetworkState::bkpAvailability(
+NetworkState::spectrum_bits NetworkState::priAvailability(
+		const std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor>& priPath) const {
+	typedef std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor>::const_iterator edgeIt;
+	spectrum_bits result;
+	for(edgeIt it=priPath.begin(); it!=priPath.end(); ++it)
+		result|=anyUse[it->idx];
+	return result;
+}
+
+NetworkState::spectrum_bits NetworkState::bkpAvailability(
 		const std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor> &priPath,
 		const boost::graph_traits<NetworkGraph>::edge_descriptor bkpLink) const {
 	typedef std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor>::const_iterator edgeIt;
-	std::bitset<NUM_SLOTS> result;
+	spectrum_bits result=primaryUse[bkpLink.idx];
 	for(edgeIt it=priPath.begin(); it!=priPath.end(); ++it)
 		result|=sharing[bkpLink.idx*numLinks+it->idx];
+	return result;
+}
+
+NetworkState::spectrum_bits NetworkState::bkpAvailability(
+		const std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor>& priPath,
+		const std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor>& bkpPath) const {
+	typedef std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor>::const_iterator edgeIt;
+	spectrum_bits result;
+	for(edgeIt itb=bkpPath.begin(); itb!=bkpPath.end(); ++itb) {
+		result|=primaryUse[itb->idx];
+		for(edgeIt itp=priPath.begin(); itp!=priPath.end(); ++itp)
+			result|=sharing[itb->idx*numLinks+itp->idx];
+	}
 	return result;
 }

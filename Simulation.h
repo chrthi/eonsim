@@ -23,30 +23,12 @@
 #ifndef SIMULATION_H_
 #define SIMULATION_H_
 
-#include <boost/graph/graph_traits.hpp>
 #include <map>
-#include <vector>
 
-class Simulation;
-struct Request;
-struct Provisioning;
-
+#include "SimulationMsgs.h"
 #include "NetworkGraph.h"
 #include "NetworkState.h"
 #include "StatCounter.h"
-
-struct Request{
-	boost::graph_traits<NetworkGraph>::vertex_descriptor source, dest;
-	unsigned int bandwidth;
-};
-
-struct Provisioning{
-	std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor> priPath;
-	std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor> bkpPath;
-	unsigned int priSpecBegin, priSpecEnd;
-	unsigned int bkpSpecBegin, bkpSpecEnd;
-	unsigned int bandwidth;
-};
 
 class ProvisioningScheme{
 public:

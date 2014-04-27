@@ -25,9 +25,8 @@
 
 #include <boost/graph/compressed_sparse_row_graph.hpp>
 #include <boost/graph/graph_selectors.hpp>
-//#include <boost/graph/properties.hpp>
 #include <boost/pending/property.hpp>
-#include <boost/smart_ptr/shared_array.hpp>
+#include <boost/smart_ptr/scoped_array.hpp>
 #include <fstream>
 #include <utility>
 #include <vector>
@@ -47,11 +46,28 @@ class NetworkGraph:
 public:
 	static NetworkGraph loadFromMatrix(std::istream &s);
 	virtual ~NetworkGraph();
-	const boost::shared_array<const distance_t> dists;
+	const distance_t* const link_lengths;
+
+	class DijkstraData {
+	public:
+		DijkstraData(nodeIndex_t v, linkIndex_t e);
+		~DijkstraData();
+		distance_t *const weights, *const dists;
+		vertex_descriptor *const preds;
+		unsigned char *const colors;
+	private:
+		DijkstraData(const DijkstraData &);
+	};
+
+	inline nodeIndex_t getNumNodes() const {return boost::num_vertices(*this); };
+	inline linkIndex_t getNumLinks() const {return boost::num_edges(*this); };
+	std::vector<edge_descriptor> dijkstra(
+			vertex_descriptor s, vertex_descriptor d, const DijkstraData &data) const;
 private:
-	typedef std::vector<std::pair<nodeIndex_t, nodeIndex_t> >::iterator edge_iterator;
-	NetworkGraph(edge_iterator edge_begin, edge_iterator edge_end,
+	typedef std::vector<std::pair<nodeIndex_t, nodeIndex_t> >::iterator edgeIterator;
+	NetworkGraph(edgeIterator edge_begin, edgeIterator edge_end,
             vertices_size_type numverts, edges_size_type numedges, distance_t *dists);
+
 };
 
 #endif /* NETWORKGRAPH_H_ */

@@ -47,7 +47,7 @@ const StatCounter& Simulation::run(unsigned long itersDiscard,
 	boost::random::exponential_distribution<> holdingTimeGen(1.0/avg_holding);
 	boost::random::uniform_int_distribution<size_t> sourceGen(0,num_vertices(topology)-1);
 	boost::random::uniform_int_distribution<size_t> destGen(0,num_vertices(topology)-2);
-	boost::random::uniform_int_distribution<unsigned int> bandwidthGen(1,80); //todo decide proper bandwidth limits
+	boost::random::uniform_int_distribution<unsigned int> bandwidthGen(4,320); //todo decide proper bandwidth limits
 	unsigned long nextRequestTime=0;
 	unsigned long currentTime=0;
 	count.reset(itersDiscard);
@@ -88,14 +88,17 @@ const StatCounter& Simulation::run(unsigned long itersDiscard,
 		Provisioning p=provision(topology,state,r);
 		//todo how to handle blockings?
 
-		count.countProvisioning(r.bandwidth);
+		count.countProvisioning(p.state,p.bandwidth);
 
-		//update the network state with the new connection
-		state.provision(p);
+		if(p.state==Provisioning::SUCCESS) {
+			//update the network state with the new connection
+			state.provision(p);
 
-		//Add the connection to the active connection list with an expiry time
-		activeConnections.insert(std::pair<const unsigned long, Provisioning>(
-				currentTime+lrint(holdingTimeGen(rng)),p));
+			//Add the connection to the active connection list with an expiry time
+			activeConnections.insert(std::pair<const unsigned long, Provisioning>(
+					currentTime+lrint(holdingTimeGen(rng)),p));
+		}
+
 		//decide the time for the next request
 		nextRequestTime=currentTime+lrint(requestTimeGen(rng));
 	}

@@ -1,5 +1,5 @@
 /**
- * @file ShortestFFLFProvisioning.h
+ * @file modulation.h
  *
  */
 
@@ -20,24 +20,30 @@
  * along with SPP EON Simulator.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SHORTESTFFLFPROVISIONING_H_
-#define SHORTESTFFLFPROVISIONING_H_
+#ifndef MODULATION_H_
+#define MODULATION_H_
 
-#include <stddef.h>
+#include "globaldef.h"
 
-#include "../NetworkGraph.h"
-#include "../NetworkState.h"
-#include "../Simulation.h"
-
-//struct Request;
-
-class ShortestFFLFProvisioning: public ProvisioningScheme {
-public:
-	ShortestFFLFProvisioning(size_t n, size_t l);
-	virtual ~ShortestFFLFProvisioning();
-	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const Request &r);
-private:
-	NetworkGraph::DijkstraData data;
+enum modulation_t {
+	QAM64,
+	QAM32,
+	QAM16,
+	QAM8,
+	QPSK,
+	BPSK,
+	MOD_NONE
 };
 
-#endif /* SHORTESTFFLFPROVISIONING_H_ */
+extern const char *const modulation_names[MOD_NONE+1];
+
+extern const struct mod_properties_t {
+	modulation_t m;
+	distance_t reach;
+	unsigned int bitPerSymbol;
+} modulations[MOD_NONE];
+
+modulation_t calcModulation(distance_t reach);
+specIndex_t calcNumSlots(bandwidth_t bw, modulation_t mod);
+
+#endif /* MODULATION_H_ */

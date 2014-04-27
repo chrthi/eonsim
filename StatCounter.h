@@ -25,31 +25,16 @@
 
 #include <iostream>
 
+#include "globaldef.h"
+#include "SimulationMsgs.h"
+
 class StatCounter {
 public:
-	/**
-	 * All different reasons for blocking a connection request that the statistics counter can count.
-	 */
-	enum blockreason_t{
-		/// No feasible primary path could be found.
-		BLOCK_PRI_NOPATH,
-		/// No spectrum was available on any primary path candidate.
-		BLOCK_PRI_NOSPEC,
-		/// No feasible backup path could be found.
-		BLOCK_SEC_NOPATH,
-		/// No spectrum was available on any backup path candidate.
-		BLOCK_SEC_NOSPEC,
-		/// This is a dummy value to ease iterating over all possible types.
-		EVENT_MIN=BLOCK_PRI_NOPATH,
-		/// This is a dummy value to ease iterating over all possible types and declaring arrays.
-		EVENT_MAX=BLOCK_SEC_NOSPEC
-	};
 	StatCounter(const unsigned long discard);
 	virtual ~StatCounter();
 	void reset(const unsigned long discard);
-	void countBlocking(const blockreason_t reason, unsigned long bandwidth);
-	void countProvisioning(unsigned long bandwidth);
-	void countTermination(unsigned long bandwidth);
+	void countProvisioning(const Provisioning::state_t state, bandwidth_t bandwidth);
+	void countTermination(bandwidth_t bandwidth);
 	friend std::ostream& operator<<(std::ostream &o, const StatCounter &s);
 private:
 	/**
@@ -60,14 +45,14 @@ private:
 	unsigned long discard;
 
 	/// Counters for each supported type of event.
-	unsigned long nBlockings[EVENT_MAX+1];
+	unsigned long nBlockings[Provisioning::SUCCESS];
 	unsigned long nProvisioned; ///< Number of connections that were successfully provisioned.
 	unsigned long nTerminated; ///< Number of connections that were terminated.
 	/**
 	 * Bandwidth counters for each supported type of event.
 	 * At each event, one of these is increased by the amount of requested bandwidth.
 	 */
-	unsigned long bwBlocked[EVENT_MAX+1];
+	unsigned long bwBlocked[Provisioning::SUCCESS];
 	unsigned long bwProvisioned; ///< Total bandwidth of connections that were successfully provisioned.
 	unsigned long bwTerminated; ///< Total bandwidth of connections that were terminated.
 };

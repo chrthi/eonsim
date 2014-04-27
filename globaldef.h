@@ -23,11 +23,14 @@
 #ifndef GLOBALDEF_H_
 #define GLOBALDEF_H_
 
-#define BANDWIDTH_UNIT 12.5
-#define DISTANCE_UNIT 2.5
+#include <stddef.h>
+
+#define SLOT_WIDTH 12.5
+#define DISTANCE_UNIT 12.5
 #define NUM_SLOTS 320
 
 typedef unsigned int specIndex_t;
+typedef unsigned int bandwidth_t;
 typedef size_t nodeIndex_t;
 typedef size_t linkIndex_t;
 typedef unsigned long simtime_t;
