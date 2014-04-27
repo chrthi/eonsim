@@ -47,12 +47,11 @@ const StatCounter& Simulation::run(unsigned long itersDiscard,
 	boost::random::exponential_distribution<> holdingTimeGen(1.0/avg_holding);
 	boost::random::uniform_int_distribution<size_t> sourceGen(0,num_vertices(topology)-1);
 	boost::random::uniform_int_distribution<size_t> destGen(0,num_vertices(topology)-2);
-	boost::random::uniform_int_distribution<unsigned int> bandwidthGen(4,320); //todo decide proper bandwidth limits
+	boost::random::uniform_int_distribution<unsigned int> bandwidthGen(4,80); //todo decide proper bandwidth limits
 	unsigned long nextRequestTime=0;
 	unsigned long currentTime=0;
 	count.reset(itersDiscard);
 	for(unsigned long i=0; i<itersTotal; ++i) {
-
 		//terminate all connections that should have terminated by now
 		for(std::map<unsigned long, Provisioning>::iterator nextTerm=activeConnections.begin();
 				nextTerm!=activeConnections.end() && nextTerm->first<=nextRequestTime;

@@ -55,25 +55,25 @@ void NetworkState::provision(const Provisioning &p) {
 	for(edgeIt it=p.bkpPath.begin(); it!=p.bkpPath.end(); ++it)
 		for(specIndex_t i=p.bkpSpecBegin;i<p.bkpSpecEnd;++i)
 			anyUse[it->idx][i]=true;
-	for(edgeIt itp=p.priPath.begin(); itp!=p.priPath.end(); ++itp)
-		for(edgeIt itb=p.bkpPath.begin(); itb!=p.bkpPath.end(); ++itb)
+	for(edgeIt itb=p.bkpPath.begin(); itb!=p.bkpPath.end(); ++itb)
+		for(edgeIt itp=p.priPath.begin(); itp!=p.priPath.end(); ++itp)
 			for(specIndex_t i=p.bkpSpecBegin;i<p.bkpSpecEnd;++i)
-				sharing[itp->idx*numLinks+itb->idx][i]=true;
+				sharing[itb->idx*numLinks+itp->idx][i]=true;
 }
 
 void NetworkState::terminate(const Provisioning &p) {
 	typedef std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor>::const_iterator edgeIt;
 	for(edgeIt it=p.priPath.begin(); it!=p.priPath.end(); ++it) {
 		for(specIndex_t i=p.priSpecBegin;i<p.priSpecEnd;++i) {
-			primaryUse[it->idx].set(i,false);
-			anyUse[it->idx].set(i,false);
+			primaryUse[it->idx][i]=false;
+			anyUse[it->idx][i]=false;
 		}
 	}
 	//the primary links now do not share any backup here any more
 	for(edgeIt itb=p.bkpPath.begin(); itb!=p.bkpPath.end(); ++itb)
 		for(edgeIt itp=p.priPath.begin(); itp!=p.priPath.end(); ++itp)
 			for(specIndex_t i=p.bkpSpecBegin;i<p.bkpSpecEnd;++i)
-				sharing[itb->idx*numLinks+itp->idx].set(i, false);
+				sharing[itb->idx*numLinks+itp->idx][i]=false;
 
 	/* On each previous backup link, construct the new backup spectrum
 	 * by checking all other links' sharing entries.

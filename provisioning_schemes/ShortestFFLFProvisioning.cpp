@@ -50,7 +50,7 @@ ShortestFFLFProvisioning::~ShortestFFLFProvisioning() {
 
 Provisioning ShortestFFLFProvisioning::operator ()(const NetworkGraph& g,
 		const NetworkState& s, const Request& r) {
-	static int gcnt=0;
+	//static int gcnt=0;
 	Provisioning result;
 	result.bandwidth=r.bandwidth;
 
@@ -88,8 +88,8 @@ Provisioning ShortestFFLFProvisioning::operator ()(const NetworkGraph& g,
 	}
 
 	//prune primary graph by setting weights to infinite
-	for(std::vector<NetworkGraph::edge_descriptor>::iterator it=result.bkpPath.begin();
-			it!=result.bkpPath.end(); ++it)
+	for(std::vector<NetworkGraph::edge_descriptor>::iterator it=result.priPath.begin();
+			it!=result.priPath.end(); ++it)
 		data.weights[it->idx]=std::numeric_limits<distance_t>::max();
 
 	//compute backup path
@@ -109,6 +109,7 @@ Provisioning ShortestFFLFProvisioning::operator ()(const NetworkGraph& g,
 
 	//last-fit
 	count=0;
+	//result.bkpSpecBegin=0;
 	result.bkpSpecEnd=0;
 	for(specIndex_t i=NUM_SLOTS-1; ; --i) {
 		if(spec[i]) count=0;
@@ -119,7 +120,13 @@ Provisioning ShortestFFLFProvisioning::operator ()(const NetworkGraph& g,
 		}
 		if(!i) break;
 	}
+
+	/*
 	if(gcnt>5000 && gcnt<5020) {
+		for(std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor>::iterator it=result.priPath.begin();
+				it!=result.priPath.end(); ++it)
+			std::cout << it->src<<"-";
+		std::cout<<r.dest<<"; ";
 		for(std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor>::iterator it=result.bkpPath.begin();
 				it!=result.bkpPath.end(); ++it)
 			std::cout << it->src<<"-";
@@ -132,6 +139,7 @@ Provisioning ShortestFFLFProvisioning::operator ()(const NetworkGraph& g,
 				<<std::setw(0)<<std::setfill(' ')<<std::endl<<std::endl;
 	}
 	++gcnt;
+	*/
 
 	if(!result.bkpSpecEnd) {
 		result.state=Provisioning::BLOCK_SEC_NOSPEC;

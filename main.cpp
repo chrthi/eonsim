@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
 		//KsqHybridCostProvisioning p(5,5);
 		Simulation s(g,p);
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&tp1);
-		const StatCounter &stats=s.run(1000,100000,100,500000);
+		const StatCounter &stats=s.run(1000,100000,1000,30000);
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&tp2);
 		std::cout<<stats;
 	}
