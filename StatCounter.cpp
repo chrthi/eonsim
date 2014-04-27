@@ -116,19 +116,19 @@ std::ostream& operator<<(std::ostream &o, const StatCounter &s) {
 	}
 	for(int e=0; e<Provisioning::SUCCESS; ++e)
 		o << static_cast<Provisioning::state_t>(e)
-		  << boost::format(": %4lu conns (%6.3f%%); %8.1f Gbps (%6.3f%%)") %
+		  << boost::format(": %6lu conns (%6.3f%%); %8.1f Gbps (%6.3f%%)") %
 		     s.nBlockings[e] % (100.0*(double)s.nBlockings[e]/events_sum) %
 		     (s.bwBlocked[e]*SLOT_WIDTH) % (100.0*(double)s.bwBlocked[e]/bandwidth_sum)
 		  << std::endl;
 	o << "Provisioned successfully "
-	  << boost::format(": %4lu conns (%6.3f%%); %8.1f Gbps (%6.3f%%)") %
+	  << boost::format(": %6lu conns (%6.3f%%); %8.1f Tbps (%6.3f%%)") %
 		 s.nProvisioned % (100.0*(double)s.nProvisioned/events_sum) %
-		 (s.bwProvisioned*SLOT_WIDTH) % (100.0*(double)s.bwProvisioned/bandwidth_sum)
+		 (s.bwProvisioned*SLOT_WIDTH*.001) % (100.0*(double)s.bwProvisioned/bandwidth_sum)
 	  << std::endl;
 	o << "Terminated               "
-	  << boost::format(": %4lu conns (%6.3f%%); %8.1f Gbps (%6.3f%%)") %
+	  << boost::format(": %6lu conns (%6.3f%%); %8.1f Tbps (%6.3f%%)") %
 		 s.nTerminated % (100.0*(double)s.nTerminated/events_sum) %
-		 (s.bwTerminated*SLOT_WIDTH) % (100.0*(double)s.bwTerminated/bandwidth_sum)
+		 (s.bwTerminated*SLOT_WIDTH*.001) % (100.0*(double)s.bwTerminated/bandwidth_sum)
 	  << std::endl;
 	return o;
 }
