@@ -29,8 +29,7 @@
 #include "../modulation.h"
 #include "../SimulationMsgs.h"
 
-ArasFFProvisioning::ArasFFProvisioning(const NetworkGraph& g, unsigned int k):
-data(g),
+ArasFFProvisioning::ArasFFProvisioning(unsigned int k):
 k(k)
 {
 }
@@ -39,7 +38,7 @@ ArasFFProvisioning::~ArasFFProvisioning() {
 }
 
 Provisioning ArasFFProvisioning::operator ()(const NetworkGraph& g,
-		const NetworkState& s, const Request& r) {
+		const NetworkState& s, NetworkGraph::DijkstraData &data, const Request& r) {
 	Provisioning result;
 	result.bandwidth=r.bandwidth;
 	result.priSpecEnd=0;

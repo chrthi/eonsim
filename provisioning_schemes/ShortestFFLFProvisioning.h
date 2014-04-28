@@ -29,15 +29,11 @@
 #include "../NetworkState.h"
 #include "../Simulation.h"
 
-//struct Request;
-
 class ShortestFFLFProvisioning: public ProvisioningScheme {
 public:
-	ShortestFFLFProvisioning(const NetworkGraph& g);
+	ShortestFFLFProvisioning();
 	virtual ~ShortestFFLFProvisioning();
-	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const Request &r);
-private:
-	NetworkGraph::DijkstraData data;
+	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, NetworkGraph::DijkstraData &data, const Request &r);
 };
 
 #endif /* SHORTESTFFLFPROVISIONING_H_ */

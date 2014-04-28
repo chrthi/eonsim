@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
 
 	//for parameters...
 	{
-		ArasPFMBLProvisioning p(g,4,880);
+		ArasPFMBLProvisioning p(4,880);
 		//KsqHybridCostProvisioning p(5,5);
 		Simulation s(g,p);
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&tp1);
@@ -58,5 +58,3 @@ int main(int argc, char **argv) {
 	}
 	std::cout<<std::setw(11)<<timediff(tp1,tp2)<<" ns"<<std::endl;
 }
-
-

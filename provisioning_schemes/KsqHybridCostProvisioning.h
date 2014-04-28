@@ -29,7 +29,7 @@ class KsqHybridCostProvisioning: public ProvisioningScheme {
 public:
 	KsqHybridCostProvisioning(unsigned int k_pri, unsigned int k_bkp);
 	virtual ~KsqHybridCostProvisioning();
-	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const Request &r);
+	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, NetworkGraph::DijkstraData &data, const Request &r);
 private:
 	unsigned int k_pri; ///< Number of paths to consider for the primary
 	unsigned int k_bkp; ///< Number of paths to consider for backup, per primary

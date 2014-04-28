@@ -29,11 +29,10 @@
 
 class ArasFFProvisioning: public ProvisioningScheme {
 public:
-	ArasFFProvisioning(const NetworkGraph& g, unsigned int k);
+	ArasFFProvisioning(unsigned int k);
 	virtual ~ArasFFProvisioning();
-	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const Request &r);
+	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, NetworkGraph::DijkstraData &data, const Request &r);
 private:
-	NetworkGraph::DijkstraData data;
 	unsigned int k;
 };
 

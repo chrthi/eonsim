@@ -33,12 +33,11 @@ KsqHybridCostProvisioning::~KsqHybridCostProvisioning() {
 }
 
 Provisioning KsqHybridCostProvisioning::operator ()(
-		const NetworkGraph& g, const NetworkState& s,
+		const NetworkGraph& g, const NetworkState& s, NetworkGraph::DijkstraData &data,
 		const Request& r) {
 	Provisioning result;
+	result.bandwidth=r.bandwidth;
 	///@todo implement k-squared provisioning
 
-
-	result.bandwidth=r.bandwidth;
 	return result;
 }

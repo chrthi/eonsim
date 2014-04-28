@@ -40,17 +40,14 @@
 
 using namespace boost;
 
-ShortestFFLFProvisioning::ShortestFFLFProvisioning(const NetworkGraph& g):
-		data(g)
-{
+ShortestFFLFProvisioning::ShortestFFLFProvisioning() {
 }
 
 ShortestFFLFProvisioning::~ShortestFFLFProvisioning() {
 }
 
 Provisioning ShortestFFLFProvisioning::operator ()(const NetworkGraph& g,
-		const NetworkState& s, const Request& r) {
-	//static int gcnt=0;
+		const NetworkState& s, NetworkGraph::DijkstraData &data, const Request& r) {
 	Provisioning result;
 	result.bandwidth=r.bandwidth;
 
@@ -120,26 +117,6 @@ Provisioning ShortestFFLFProvisioning::operator ()(const NetworkGraph& g,
 		}
 		if(!i) break;
 	}
-
-	/*
-	if(gcnt>5000 && gcnt<5020) {
-		for(std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor>::iterator it=result.priPath.begin();
-				it!=result.priPath.end(); ++it)
-			std::cout << it->src<<"-";
-		std::cout<<r.dest<<"; ";
-		for(std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor>::iterator it=result.bkpPath.begin();
-				it!=result.bkpPath.end(); ++it)
-			std::cout << it->src<<"-";
-		std::cout<<r.dest<<" ("<<data.dists[r.dest]*DISTANCE_UNIT<<", "<<modulation_names[result.bkpMod]
-		         <<", "<<r.bandwidth<<')'<<std::endl;
-		std::cout<<spec.to_string('_','X')<<std::endl
-				<<std::setw(result.bkpSpecBegin)<<std::setfill('_')<<""
-				<<std::setw(result.bkpSpecEnd-result.bkpSpecBegin)<<std::setfill('B')<<""
-				<<std::setw(NUM_SLOTS-result.bkpSpecEnd)<<std::setfill('_')<<""
-				<<std::setw(0)<<std::setfill(' ')<<std::endl<<std::endl;
-	}
-	++gcnt;
-	*/
 
 	if(!result.bkpSpecEnd) {
 		result.state=Provisioning::BLOCK_SEC_NOSPEC;

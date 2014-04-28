@@ -36,6 +36,7 @@ Simulation::~Simulation() {
 Simulation::Simulation(const NetworkGraph& topology, ProvisioningScheme& p):
 				topology(topology),
 				state(topology),
+				scratchpad(topology),
 				provision(p),
 				count(0)
 {}
@@ -84,7 +85,7 @@ const StatCounter& Simulation::run(unsigned long itersDiscard,
 		r.bandwidth=bandwidthGen(rng);
 
 		//Run the provisioning algorithm
-		Provisioning p=provision(topology,state,r);
+		Provisioning p=provision(topology,state,scratchpad,r);
 		//todo how to handle blockings?
 
 		count.countProvisioning(p.state,p.bandwidth);

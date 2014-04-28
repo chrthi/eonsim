@@ -24,9 +24,7 @@
 
 #include "../SimulationMsgs.h"
 
-ArasPFMBLProvisioning::ArasPFMBLProvisioning(const NetworkGraph& g,
-		unsigned int k, unsigned int c1):
-		data(g),
+ArasPFMBLProvisioning::ArasPFMBLProvisioning(unsigned int k, unsigned int c1):
 		k(k),
 		c1(c1)
 {
@@ -37,7 +35,7 @@ ArasPFMBLProvisioning::~ArasPFMBLProvisioning() {
 }
 
 Provisioning ArasPFMBLProvisioning::operator ()(const NetworkGraph& g,
-		const NetworkState& s, const Request& r) {
+		const NetworkState& s, NetworkGraph::DijkstraData &data, const Request& r) {
 	Provisioning result;
 	result.bandwidth=r.bandwidth;
 	result.priSpecEnd=0;

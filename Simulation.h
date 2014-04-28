@@ -32,7 +32,7 @@
 
 class ProvisioningScheme{
 public:
-	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const Request &r) =0;
+	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, NetworkGraph::DijkstraData &data, const Request &r) =0;
 	virtual ~ProvisioningScheme() {};
 };
 
@@ -45,14 +45,10 @@ public:
 private:
 	const NetworkGraph& topology;
 	NetworkState state;
+	NetworkGraph::DijkstraData scratchpad;
 	ProvisioningScheme &provision;
 	StatCounter count;
 	std::multimap<unsigned long, Provisioning> activeConnections;
 };
-
-/*
-In the old simulator, the average holding time is 1s, the arrival rate is given as a parameter.
-When a connection request is handled, a new request is generated.
-*/
 
 #endif /* SIMULATION_H_ */
