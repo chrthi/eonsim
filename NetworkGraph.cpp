@@ -38,16 +38,9 @@
 using namespace boost;
 
 NetworkGraph::NetworkGraph(edgeIterator edge_begin, edgeIterator edge_end,
-		vertices_size_type numverts, edges_size_type numedges, distance_t *dists):
-		boost::compressed_sparse_row_graph<
-		boost::directedS, //Graph type: Directed, Undirected, Bidirectional.
-		boost::no_property, //Vertex properties
-		boost::no_property, //Edge properties
-		boost::no_property, //Graph properties
-		nodeIndex_t, //vertex index type
-		linkIndex_t  //edge index type
-		>(edges_are_sorted,edge_begin,edge_end,numverts,numedges),
-		link_lengths(dists)
+		Graph::vertices_size_type numverts, Graph::edges_size_type numedges, distance_t *dists):
+		link_lengths(dists),
+		g(edges_are_sorted,edge_begin,edge_end,numverts,numedges)
 {
 }
 
@@ -56,8 +49,8 @@ NetworkGraph::~NetworkGraph() {
 }
 
 NetworkGraph NetworkGraph::loadFromMatrix(std::istream &s) {
-	vertices_size_type n;
-	edges_size_type l;
+	Graph::vertices_size_type n;
+	Graph::edges_size_type l;
 	s>>n>>l;
 	l*=2; //we treat the two directions as separate edges
 	s.ignore(2); // skip the (cr)lf after the link count
@@ -85,12 +78,12 @@ NetworkGraph NetworkGraph::loadFromMatrix(std::istream &s) {
 }
 
 NetworkGraph::DijkstraData::DijkstraData(const NetworkGraph &g):
-		weights(new distance_t[num_edges(g)]),
-		dists(new distance_t[num_vertices(g)]),
-		preds(new vertex_descriptor[num_vertices(g)]),
-		colors(new unsigned char[num_vertices(g)]),
+		weights(new distance_t[num_edges(g.g)]),
+		dists(new distance_t[num_vertices(g.g)]),
+		preds(new Graph::vertex_descriptor[num_vertices(g.g)]),
+		colors(new unsigned char[num_vertices(g.g)]),
 		link_lengths(g.link_lengths),
-		wSize(num_edges(g)*sizeof(distance_t))
+		wSize(num_edges(g.g)*sizeof(distance_t))
 {
 	resetWeights();
 }
@@ -107,20 +100,20 @@ void NetworkGraph::DijkstraData::resetWeights() const {
 }
 
 NetworkGraph::Path NetworkGraph::dijkstra(
-		vertex_descriptor s, vertex_descriptor d,
+		Graph::vertex_descriptor s, Graph::vertex_descriptor d,
 		const DijkstraData& data) const {
 	boost::dijkstra_shortest_paths(
-			*this,
+			g,
 			s,
-			weight_map(make_iterator_property_map(data.weights,get(edge_index,*this)))
-			.predecessor_map(make_iterator_property_map(data.preds,get(vertex_index,*this)))
-			.distance_map(make_iterator_property_map(data.dists,get(vertex_index,*this)))
-			.color_map(make_iterator_property_map(data.colors,get(vertex_index,*this)))
+			weight_map(make_iterator_property_map(data.weights,get(edge_index,g)))
+			.predecessor_map(make_iterator_property_map(data.preds,get(vertex_index,g)))
+			.distance_map(make_iterator_property_map(data.dists,get(vertex_index,g)))
+			.color_map(make_iterator_property_map(data.colors,get(vertex_index,g)))
 	);
-	std::vector<edge_descriptor> r;
+	std::vector<Graph::edge_descriptor> r;
 	if(d==data.preds[d]) return r;
-	for(vertex_descriptor v=d; v!=s; ) {
-		std::pair<edge_descriptor,bool> e=edge(data.preds[v],v,*this);
+	for(Graph::vertex_descriptor v=d; v!=s; ) {
+		std::pair<Graph::edge_descriptor,bool> e=edge(data.preds[v],v,g);
 		if(!e.second || e.first.src==v) {
 			r.clear();
 			return r;
@@ -139,7 +132,7 @@ NetworkGraph::Path NetworkGraph::dijkstra(
 }
 
 NetworkGraph::YenKShortestSearch::YenKShortestSearch(const NetworkGraph& g,
-		vertex_descriptor s, vertex_descriptor d, const DijkstraData& data):
+		Graph::vertex_descriptor s, Graph::vertex_descriptor d, const DijkstraData& data):
 				g(g),
 				s(s),
 				d(d),
@@ -154,6 +147,7 @@ std::vector<NetworkGraph::Path> &NetworkGraph::YenKShortestSearch::getPaths(unsi
 	if(!A.size()) {
 		const Path p=g.dijkstra(s,d,data);
 		if(!p.empty()) A.push_back(p);
+		else return A;
 		if(k==1) return A;
 	}
 	while(A.size()<k) {
@@ -174,15 +168,15 @@ std::vector<NetworkGraph::Path> &NetworkGraph::YenKShortestSearch::getPaths(unsi
 
 			//calculate shortest spur path
 			boost::dijkstra_shortest_paths(
-					g,
+					g.g,
 					prev[i].src,
-					weight_map(make_iterator_property_map(data.weights,get(edge_index,g)))
-					.predecessor_map(make_iterator_property_map(data.preds,get(vertex_index,g)))
-					.distance_map(make_iterator_property_map(data.dists,get(vertex_index,g)))
-					.color_map(make_iterator_property_map(data.colors,get(vertex_index,g)))
+					weight_map(make_iterator_property_map(data.weights,get(edge_index,g.g)))
+					.predecessor_map(make_iterator_property_map(data.preds,get(vertex_index,g.g)))
+					.distance_map(make_iterator_property_map(data.dists,get(vertex_index,g.g)))
+					.color_map(make_iterator_property_map(data.colors,get(vertex_index,g.g)))
 			);
 			VertexPath newCandidate;
-			for(vertex_descriptor v=d; v!=data.preds[v]; v=data.preds[v])
+			for(Graph::vertex_descriptor v=d; v!=data.preds[v]; v=data.preds[v])
 				newCandidate.push_back(data.preds[v]);
 
 			if(newCandidate.size() && *newCandidate.rbegin()==prev[i].src) {
@@ -199,7 +193,7 @@ std::vector<NetworkGraph::Path> &NetworkGraph::YenKShortestSearch::getPaths(unsi
 
 			//restore edges
 			for(std::vector<Path>::iterator itA=A.begin(); itA!=A.end(); ++itA)
-				if(itA->size()>=i) data.weights[(*itA)[i].idx]=g.link_lengths[(*itA)[i].idx];
+				if(itA->size()>i) data.weights[(*itA)[i].idx]=g.link_lengths[(*itA)[i].idx];
 
 			rootD+=data.weights[prev[i].idx];
 		}
@@ -208,11 +202,22 @@ std::vector<NetworkGraph::Path> &NetworkGraph::YenKShortestSearch::getPaths(unsi
 		Path p;
 		p.reserve(vp.size());
 		for(VertexPath::const_reverse_iterator it=vp.rbegin(); it!=vp.rend()-1; ++it) {
-			p.push_back(edge(*it,it[1],g).first);
+			p.push_back(edge(*it,it[1],g.g).first);
 		}
-		p.push_back(edge(*vp.begin(),d,g).first);
+		p.push_back(edge(*vp.begin(),d,g.g).first);
 		A.push_back(p);
 		B.erase(B.begin());
 	}
 	return A;
+}
+
+void NetworkGraph::YenKShortestSearch::reset() {
+	A.clear();
+	B.clear();
+}
+
+void NetworkGraph::YenKShortestSearch::reset(Graph::vertex_descriptor s, Graph::vertex_descriptor d) {
+	reset();
+	this->s=s;
+	this->d=d;
 }

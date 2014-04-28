@@ -44,10 +44,11 @@ public:
 	spectrum_bits priAvailability(const NetworkGraph::Path &priPath) const;
 	spectrum_bits bkpAvailability(
 			const NetworkGraph::Path &priPath,
-			const NetworkGraph::edge_descriptor bkpLink) const;
+			const NetworkGraph::Graph::edge_descriptor bkpLink) const;
 	spectrum_bits bkpAvailability(
 			const NetworkGraph::Path &priPath,
 			const NetworkGraph::Path &bkpPath) const;
+	specIndex_t countFreeBlocks(const NetworkGraph::Path &bkpPath, specIndex_t i) const;
 private:
 	NetworkState(const NetworkState &n);
 	linkIndex_t numLinks;

@@ -31,7 +31,7 @@
 #include "Simulation.h"
 
 NetworkState::NetworkState(const NetworkGraph& topology) :
-numLinks(boost::num_edges(topology)),
+numLinks(boost::num_edges(topology.g)),
 primaryUse(new spectrum_bits[numLinks]),
 anyUse(new spectrum_bits[numLinks]),
 sharing(new spectrum_bits[numLinks*numLinks])
@@ -99,7 +99,7 @@ NetworkState::spectrum_bits NetworkState::priAvailability(
 
 NetworkState::spectrum_bits NetworkState::bkpAvailability(
 		const NetworkGraph::Path &priPath,
-		const NetworkGraph::edge_descriptor bkpLink) const {
+		const NetworkGraph::Graph::edge_descriptor bkpLink) const {
 	typedef NetworkGraph::Path::const_iterator edgeIt;
 	spectrum_bits result=primaryUse[bkpLink.idx];
 	for(edgeIt it=priPath.begin(); it!=priPath.end(); ++it)
@@ -117,5 +117,13 @@ NetworkState::spectrum_bits NetworkState::bkpAvailability(
 		for(edgeIt itp=priPath.begin(); itp!=priPath.end(); ++itp)
 			result|=sharing[itb->idx*numLinks+itp->idx];
 	}
+	return result;
+}
+
+specIndex_t NetworkState::countFreeBlocks(const NetworkGraph::Path& bkpPath,
+		specIndex_t i) const {
+	specIndex_t result=0;
+	for(auto const &e:bkpPath)
+		if(!anyUse[e.idx][i]) ++result;
 	return result;
 }

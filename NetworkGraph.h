@@ -33,27 +33,27 @@
 
 #include "globaldef.h"
 
-class NetworkGraph:
-		public boost::compressed_sparse_row_graph<
-		boost::directedS, //Graph type: Directed, Undirected, Bidirectional.
-		boost::no_property, //Vertex properties
-		boost::no_property, //Edge properties
-		boost::no_property, //Graph properties
-		nodeIndex_t, //vertex index type
-		linkIndex_t  //edge index type
-		>
-{
+class NetworkGraph {
 public:
 	static NetworkGraph loadFromMatrix(std::istream &s);
 	virtual ~NetworkGraph();
 	const distance_t* const link_lengths;
 
+	typedef boost::compressed_sparse_row_graph<
+			boost::directedS, //Graph type: Directed, Undirected, Bidirectional.
+			boost::no_property, //Vertex properties
+			boost::no_property, //Edge properties
+			boost::no_property, //Graph properties
+			nodeIndex_t, //vertex index type
+			linkIndex_t  //edge index type
+			> Graph;
+	Graph g;
 	class DijkstraData {
 	public:
 		DijkstraData(const NetworkGraph &g);
 		~DijkstraData();
 		distance_t *const weights, *const dists;
-		vertex_descriptor *const preds;
+		Graph::vertex_descriptor *const preds;
 		unsigned char *const colors;
 		void resetWeights() const;
 	private:
@@ -62,23 +62,25 @@ public:
 		DijkstraData(const DijkstraData &);
 	};
 
-	typedef std::vector<edge_descriptor> Path;
+	typedef std::vector<Graph::edge_descriptor> Path;
 
 //	inline nodeIndex_t getNumNodes() const {return boost::num_vertices(*this); };
 //	inline linkIndex_t getNumLinks() const {return boost::num_edges(*this); };
 
-	Path dijkstra(vertex_descriptor s, vertex_descriptor d, const DijkstraData &data) const;
+	Path dijkstra(Graph::vertex_descriptor s, Graph::vertex_descriptor d, const DijkstraData &data) const;
 
 	class YenKShortestSearch{
 	public:
-		YenKShortestSearch(const NetworkGraph &g, vertex_descriptor s, vertex_descriptor d, const DijkstraData &data);
+		YenKShortestSearch(const NetworkGraph &g, Graph::vertex_descriptor s, Graph::vertex_descriptor d, const DijkstraData &data);
 		std::vector<Path> &getPaths(unsigned int k);
+		void reset();
+		void reset(Graph::vertex_descriptor s, Graph::vertex_descriptor d);
 	private:
-		typedef std::vector<vertex_descriptor> VertexPath;
+		typedef std::vector<Graph::vertex_descriptor> VertexPath;
 		typedef std::multimap<distance_t,VertexPath> yen_path_buffer;
 
 		const NetworkGraph &g;
-		vertex_descriptor s, d;
+		Graph::vertex_descriptor s, d;
 		const DijkstraData &data;
 		std::vector<Path> A;
 		yen_path_buffer B;
@@ -86,7 +88,7 @@ public:
 private:
 	typedef std::vector<std::pair<nodeIndex_t, nodeIndex_t> >::iterator edgeIterator;
 	NetworkGraph(edgeIterator edge_begin, edgeIterator edge_end,
-            vertices_size_type numverts, edges_size_type numedges, distance_t *dists);
+			Graph::vertices_size_type numverts, Graph::edges_size_type numedges, distance_t *dists);
 
 };
 

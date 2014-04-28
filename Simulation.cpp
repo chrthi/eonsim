@@ -45,9 +45,9 @@ const StatCounter& Simulation::run(unsigned long itersDiscard,
 	boost::random::taus88 rng(0);
 	boost::random::exponential_distribution<> requestTimeGen(1.0/avg_interarrival);
 	boost::random::exponential_distribution<> holdingTimeGen(1.0/avg_holding);
-	boost::random::uniform_int_distribution<size_t> sourceGen(0,num_vertices(topology)-1);
-	boost::random::uniform_int_distribution<size_t> destGen(0,num_vertices(topology)-2);
-	boost::random::uniform_int_distribution<unsigned int> bandwidthGen(4,80); //todo decide proper bandwidth limits
+	boost::random::uniform_int_distribution<size_t> sourceGen(0,num_vertices(topology.g)-1);
+	boost::random::uniform_int_distribution<size_t> destGen(0,num_vertices(topology.g)-2);
+	boost::random::uniform_int_distribution<unsigned int> bandwidthGen(ceil(10/SLOT_WIDTH),ceil(400/SLOT_WIDTH)); //todo decide proper bandwidth limits
 	unsigned long nextRequestTime=0;
 	unsigned long currentTime=0;
 	count.reset(itersDiscard);
@@ -77,10 +77,10 @@ const StatCounter& Simulation::run(unsigned long itersDiscard,
 		//Generate a random request
 		Request r;
 		size_t sourceIndex=sourceGen(rng);
-		r.source=vertex(sourceIndex,topology);
+		r.source=vertex(sourceIndex,topology.g);
 		size_t destIndex=destGen(rng);
 		if(destIndex>=sourceIndex) ++destIndex;
-		r.dest=vertex(destIndex,topology);
+		r.dest=vertex(destIndex,topology.g);
 		r.bandwidth=bandwidthGen(rng);
 
 		//Run the provisioning algorithm

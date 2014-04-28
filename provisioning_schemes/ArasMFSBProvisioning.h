@@ -1,5 +1,5 @@
 /**
- * @file globaldef.h
+ * @file ArasMFSBProvisioning.h
  *
  */
 
@@ -20,20 +20,21 @@
  * along with SPP EON Simulator.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef GLOBALDEF_H_
-#define GLOBALDEF_H_
+#ifndef ARASMFSBPROVISIONING_H_
+#define ARASMFSBPROVISIONING_H_
 
-#include <stddef.h>
+#include "../NetworkGraph.h"
+#include "../NetworkState.h"
+#include "../Simulation.h"
 
-#define SLOT_WIDTH 12.5
-#define DISTANCE_UNIT 12.5
-#define NUM_SLOTS 320
+class ArasMFSBProvisioning: public ProvisioningScheme {
+public:
+	ArasMFSBProvisioning(const NetworkGraph& g, unsigned int k);
+	virtual ~ArasMFSBProvisioning();
+	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const Request &r);
+private:
+	NetworkGraph::DijkstraData data;
+	unsigned int k;
+};
 
-typedef unsigned short specIndex_t;
-typedef unsigned short bandwidth_t;
-typedef unsigned short nodeIndex_t;
-typedef unsigned short linkIndex_t;
-typedef unsigned long simtime_t;
-typedef unsigned short distance_t;
-
-#endif /* GLOBALDEF_H_ */
+#endif /* ARASMFSBPROVISIONING_H_ */

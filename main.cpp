@@ -26,9 +26,11 @@
 #include <iostream>
 
 #include "NetworkGraph.h"
-#include "NetworkState.h"
-#include "provisioning_schemes/KsqHybridCostProvisioning.h"
-#include "provisioning_schemes/ShortestFFLFProvisioning.h"
+#include "provisioning_schemes/ArasFFProvisioning.h"
+#include "provisioning_schemes/ArasMFSBProvisioning.h"
+#include "provisioning_schemes/ArasPFMBLProvisioning.h"
+//#include "provisioning_schemes/KsqHybridCostProvisioning.h"
+//#include "provisioning_schemes/ShortestFFLFProvisioning.h"
 #include "Simulation.h"
 #include "StatCounter.h"
 
@@ -44,26 +46,13 @@ int main(int argc, char **argv) {
 	NetworkGraph g=NetworkGraph::loadFromMatrix(in);
 	in.close();
 
-	NetworkGraph::DijkstraData data(g);
-	NetworkGraph::YenKShortestSearch y(g,3,19,data);
-	const std::vector<NetworkGraph::Path> &paths=y.getPaths(15);
-	for(std::vector<NetworkGraph::Path>::const_iterator it=paths.begin(); it!=paths.end(); ++it) {
-		distance_t d=0;
-		for(NetworkGraph::Path::const_iterator itp=it->begin(); itp!=it->end(); ++itp) {
-			std::cout<<itp->src<<" - ";
-			d+=data.weights[itp->idx];
-		}
-		std::cout<<"19 ("<<d*DISTANCE_UNIT<<')'<<std::endl;
-	}
-	return 0;
-
 	//for parameters...
 	{
-		ShortestFFLFProvisioning p(g);
+		ArasPFMBLProvisioning p(g,4,880);
 		//KsqHybridCostProvisioning p(5,5);
 		Simulation s(g,p);
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&tp1);
-		const StatCounter &stats=s.run(1000,100000,1000,30000);
+		const StatCounter &stats=s.run(10000,100000,1000,200000);
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&tp2);
 		std::cout<<stats;
 	}

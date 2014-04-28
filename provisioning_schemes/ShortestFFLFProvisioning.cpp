@@ -88,7 +88,7 @@ Provisioning ShortestFFLFProvisioning::operator ()(const NetworkGraph& g,
 	}
 
 	//prune primary graph by setting weights to infinite
-	for(std::vector<NetworkGraph::edge_descriptor>::iterator it=result.priPath.begin();
+	for(std::vector<NetworkGraph::Graph::edge_descriptor>::iterator it=result.priPath.begin();
 			it!=result.priPath.end(); ++it)
 		data.weights[it->idx]=std::numeric_limits<distance_t>::max();
 

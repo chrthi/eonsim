@@ -31,7 +31,7 @@
 #include "NetworkGraph.h"
 
 struct Request{
-	boost::graph_traits<NetworkGraph>::vertex_descriptor source, dest;
+	NetworkGraph::Graph::vertex_descriptor source, dest;
 	unsigned int bandwidth;
 };
 
