@@ -33,7 +33,7 @@
 
 class ShortestFFLFProvisioning: public ProvisioningScheme {
 public:
-	ShortestFFLFProvisioning(size_t n, size_t l);
+	ShortestFFLFProvisioning(const NetworkGraph& g);
 	virtual ~ShortestFFLFProvisioning();
 	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const Request &r);
 private:

@@ -36,13 +36,16 @@ struct Request{
 };
 
 struct Provisioning{
-	std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor> priPath;
+	NetworkGraph::Path priPath;
 	specIndex_t priSpecBegin, priSpecEnd;
 	modulation_t priMod;
-	std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor> bkpPath;
+
+	NetworkGraph::Path bkpPath;
 	specIndex_t bkpSpecBegin, bkpSpecEnd;
 	modulation_t bkpMod;
+
 	bandwidth_t bandwidth;
+
 	/**
 	 * All different reasons for blocking a connection request that the statistics counter can count.
 	 */

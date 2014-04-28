@@ -84,12 +84,15 @@ NetworkGraph NetworkGraph::loadFromMatrix(std::istream &s) {
 	return NetworkGraph(edges.begin(),edges.end(),n,l,dists);
 }
 
-NetworkGraph::DijkstraData::DijkstraData(nodeIndex_t v, linkIndex_t e):
-		weights(new distance_t[e]),
-		dists(new distance_t[v]),
-		preds(new vertex_descriptor[v]),
-		colors(new unsigned char[v])
+NetworkGraph::DijkstraData::DijkstraData(const NetworkGraph &g):
+		weights(new distance_t[num_edges(g)]),
+		dists(new distance_t[num_vertices(g)]),
+		preds(new vertex_descriptor[num_vertices(g)]),
+		colors(new unsigned char[num_vertices(g)]),
+		link_lengths(g.link_lengths),
+		wSize(num_edges(g)*sizeof(distance_t))
 {
+	resetWeights();
 }
 
 NetworkGraph::DijkstraData::~DijkstraData() {
@@ -99,7 +102,11 @@ NetworkGraph::DijkstraData::~DijkstraData() {
 	delete[] weights;
 }
 
-std::vector<NetworkGraph::edge_descriptor> NetworkGraph::dijkstra(
+void NetworkGraph::DijkstraData::resetWeights() const {
+	memcpy(weights,link_lengths,wSize);
+}
+
+NetworkGraph::Path NetworkGraph::dijkstra(
 		vertex_descriptor s, vertex_descriptor d,
 		const DijkstraData& data) const {
 	boost::dijkstra_shortest_paths(
@@ -114,7 +121,10 @@ std::vector<NetworkGraph::edge_descriptor> NetworkGraph::dijkstra(
 	if(d==data.preds[d]) return r;
 	for(vertex_descriptor v=d; v!=s; ) {
 		std::pair<edge_descriptor,bool> e=edge(data.preds[v],v,*this);
-		if(!e.second || e.first.src==v) throw int(42);
+		if(!e.second || e.first.src==v) {
+			r.clear();
+			return r;
+		}
 		r.push_back(e.first);
 		v=e.first.src;
 	}
@@ -126,4 +136,83 @@ std::vector<NetworkGraph::edge_descriptor> NetworkGraph::dijkstra(
 	std::cout<<r.dest<<" ("<<dists[r.dest]<<')'<<std::endl;*/
 
 	return r;
+}
+
+NetworkGraph::YenKShortestSearch::YenKShortestSearch(const NetworkGraph& g,
+		vertex_descriptor s, vertex_descriptor d, const DijkstraData& data):
+				g(g),
+				s(s),
+				d(d),
+				data(data),
+				A(),
+				B()
+{
+}
+
+std::vector<NetworkGraph::Path> &NetworkGraph::YenKShortestSearch::getPaths(unsigned int k) {
+	if(k<=A.size()) return A;
+	if(!A.size()) {
+		const Path p=g.dijkstra(s,d,data);
+		if(!p.empty()) A.push_back(p);
+		if(k==1) return A;
+	}
+	while(A.size()<k) {
+		const Path& prev=*(A.rbegin());
+		distance_t rootD=0;
+		for(nodeIndex_t i=0;i<prev.size(); ++i) {
+			//for all previous paths
+			for(std::vector<Path>::iterator itA=A.begin(); itA!=A.end(); ++itA) {
+				//check if they are identical in the first i edges
+				if(itA->size()<i) continue;
+				bool sameRoot=true;
+				for(nodeIndex_t k=0; k<i; ++k)
+					if((*itA)[k].idx!=prev[k].idx) {sameRoot=false; break;}
+				//if yes, remove the following edge from the graph.
+				if(sameRoot)
+					data.weights[(*itA)[i].idx]=std::numeric_limits<distance_t>::max();
+			}
+
+			//calculate shortest spur path
+			boost::dijkstra_shortest_paths(
+					g,
+					prev[i].src,
+					weight_map(make_iterator_property_map(data.weights,get(edge_index,g)))
+					.predecessor_map(make_iterator_property_map(data.preds,get(vertex_index,g)))
+					.distance_map(make_iterator_property_map(data.dists,get(vertex_index,g)))
+					.color_map(make_iterator_property_map(data.colors,get(vertex_index,g)))
+			);
+			VertexPath newCandidate;
+			for(vertex_descriptor v=d; v!=data.preds[v]; v=data.preds[v])
+				newCandidate.push_back(data.preds[v]);
+
+			if(newCandidate.size() && *newCandidate.rbegin()==prev[i].src) {
+				for(int k=i-1; k>=0; --k)
+					newCandidate.push_back(prev[k].src);
+				bool isUnique=true;
+				const std::pair<yen_path_buffer::iterator,yen_path_buffer::iterator>
+					range=B.equal_range(rootD+data.dists[d]);
+				for(yen_path_buffer::iterator it=range.first; it!=range.second; ++it)
+					if(newCandidate==it->second) { isUnique=false; break; }
+				if(isUnique)
+					B.insert(yen_path_buffer::value_type(rootD+data.dists[d],newCandidate));
+			}
+
+			//restore edges
+			for(std::vector<Path>::iterator itA=A.begin(); itA!=A.end(); ++itA)
+				if(itA->size()>=i) data.weights[(*itA)[i].idx]=g.link_lengths[(*itA)[i].idx];
+
+			rootD+=data.weights[prev[i].idx];
+		}
+		if(!B.size()) return A;
+		const VertexPath &vp=B.begin()->second;
+		Path p;
+		p.reserve(vp.size());
+		for(VertexPath::const_reverse_iterator it=vp.rbegin(); it!=vp.rend()-1; ++it) {
+			p.push_back(edge(*it,it[1],g).first);
+		}
+		p.push_back(edge(*vp.begin(),d,g).first);
+		A.push_back(p);
+		B.erase(B.begin());
+	}
+	return A;
 }

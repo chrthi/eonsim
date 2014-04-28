@@ -45,7 +45,7 @@ NetworkState::~NetworkState() {
 }
 
 void NetworkState::provision(const Provisioning &p) {
-	typedef std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor>::const_iterator edgeIt;
+	typedef NetworkGraph::Path::const_iterator edgeIt;
 	for(edgeIt it=p.priPath.begin(); it!=p.priPath.end(); ++it) {
 		for(specIndex_t i=p.priSpecBegin;i<p.priSpecEnd;++i) {
 			primaryUse[it->idx][i]=true;
@@ -62,7 +62,7 @@ void NetworkState::provision(const Provisioning &p) {
 }
 
 void NetworkState::terminate(const Provisioning &p) {
-	typedef std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor>::const_iterator edgeIt;
+	typedef NetworkGraph::Path::const_iterator edgeIt;
 	for(edgeIt it=p.priPath.begin(); it!=p.priPath.end(); ++it) {
 		for(specIndex_t i=p.priSpecBegin;i<p.priSpecEnd;++i) {
 			primaryUse[it->idx][i]=false;
@@ -89,8 +89,8 @@ void NetworkState::terminate(const Provisioning &p) {
 }
 
 NetworkState::spectrum_bits NetworkState::priAvailability(
-		const std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor>& priPath) const {
-	typedef std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor>::const_iterator edgeIt;
+		const NetworkGraph::Path& priPath) const {
+	typedef NetworkGraph::Path::const_iterator edgeIt;
 	spectrum_bits result;
 	for(edgeIt it=priPath.begin(); it!=priPath.end(); ++it)
 		result|=anyUse[it->idx];
@@ -98,9 +98,9 @@ NetworkState::spectrum_bits NetworkState::priAvailability(
 }
 
 NetworkState::spectrum_bits NetworkState::bkpAvailability(
-		const std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor> &priPath,
-		const boost::graph_traits<NetworkGraph>::edge_descriptor bkpLink) const {
-	typedef std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor>::const_iterator edgeIt;
+		const NetworkGraph::Path &priPath,
+		const NetworkGraph::edge_descriptor bkpLink) const {
+	typedef NetworkGraph::Path::const_iterator edgeIt;
 	spectrum_bits result=primaryUse[bkpLink.idx];
 	for(edgeIt it=priPath.begin(); it!=priPath.end(); ++it)
 		result|=sharing[bkpLink.idx*numLinks+it->idx];
@@ -108,9 +108,9 @@ NetworkState::spectrum_bits NetworkState::bkpAvailability(
 }
 
 NetworkState::spectrum_bits NetworkState::bkpAvailability(
-		const std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor>& priPath,
-		const std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor>& bkpPath) const {
-	typedef std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor>::const_iterator edgeIt;
+		const NetworkGraph::Path& priPath,
+		const NetworkGraph::Path& bkpPath) const {
+	typedef NetworkGraph::Path::const_iterator edgeIt;
 	spectrum_bits result;
 	for(edgeIt itb=bkpPath.begin(); itb!=bkpPath.end(); ++itb) {
 		result|=primaryUse[itb->idx];

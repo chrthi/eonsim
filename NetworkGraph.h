@@ -50,19 +50,39 @@ public:
 
 	class DijkstraData {
 	public:
-		DijkstraData(nodeIndex_t v, linkIndex_t e);
+		DijkstraData(const NetworkGraph &g);
 		~DijkstraData();
 		distance_t *const weights, *const dists;
 		vertex_descriptor *const preds;
 		unsigned char *const colors;
+		void resetWeights() const;
 	private:
+		const distance_t *const link_lengths;
+		size_t wSize;
 		DijkstraData(const DijkstraData &);
 	};
 
-	inline nodeIndex_t getNumNodes() const {return boost::num_vertices(*this); };
-	inline linkIndex_t getNumLinks() const {return boost::num_edges(*this); };
-	std::vector<edge_descriptor> dijkstra(
-			vertex_descriptor s, vertex_descriptor d, const DijkstraData &data) const;
+	typedef std::vector<edge_descriptor> Path;
+
+//	inline nodeIndex_t getNumNodes() const {return boost::num_vertices(*this); };
+//	inline linkIndex_t getNumLinks() const {return boost::num_edges(*this); };
+
+	Path dijkstra(vertex_descriptor s, vertex_descriptor d, const DijkstraData &data) const;
+
+	class YenKShortestSearch{
+	public:
+		YenKShortestSearch(const NetworkGraph &g, vertex_descriptor s, vertex_descriptor d, const DijkstraData &data);
+		std::vector<Path> &getPaths(unsigned int k);
+	private:
+		typedef std::vector<vertex_descriptor> VertexPath;
+		typedef std::multimap<distance_t,VertexPath> yen_path_buffer;
+
+		const NetworkGraph &g;
+		vertex_descriptor s, d;
+		const DijkstraData &data;
+		std::vector<Path> A;
+		yen_path_buffer B;
+	};
 private:
 	typedef std::vector<std::pair<nodeIndex_t, nodeIndex_t> >::iterator edgeIterator;
 	NetworkGraph(edgeIterator edge_begin, edgeIterator edge_end,

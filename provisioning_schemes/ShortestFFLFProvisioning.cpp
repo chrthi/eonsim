@@ -40,8 +40,8 @@
 
 using namespace boost;
 
-ShortestFFLFProvisioning::ShortestFFLFProvisioning(size_t n, size_t l):
-		data(n,l)
+ShortestFFLFProvisioning::ShortestFFLFProvisioning(const NetworkGraph& g):
+		data(g)
 {
 }
 
@@ -55,7 +55,7 @@ Provisioning ShortestFFLFProvisioning::operator ()(const NetworkGraph& g,
 	result.bandwidth=r.bandwidth;
 
 	//reset link weights to distances
-	memcpy(data.weights,g.link_lengths,boost::num_edges(g)*sizeof(distance_t));
+	data.resetWeights();
 
 	//compute primary path
 	result.priPath=g.dijkstra(r.source,r.dest,data);

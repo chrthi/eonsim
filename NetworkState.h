@@ -41,13 +41,13 @@ public:
 	void provision(const Provisioning &p);
 	void terminate(const Provisioning &p);
 	typedef std::bitset<NUM_SLOTS> spectrum_bits;
-	spectrum_bits priAvailability(const std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor> &priPath) const;
+	spectrum_bits priAvailability(const NetworkGraph::Path &priPath) const;
 	spectrum_bits bkpAvailability(
-			const std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor> &priPath,
-			const boost::graph_traits<NetworkGraph>::edge_descriptor bkpLink) const;
+			const NetworkGraph::Path &priPath,
+			const NetworkGraph::edge_descriptor bkpLink) const;
 	spectrum_bits bkpAvailability(
-			const std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor> &priPath,
-			const std::vector<boost::graph_traits<NetworkGraph>::edge_descriptor> &bkpPath) const;
+			const NetworkGraph::Path &priPath,
+			const NetworkGraph::Path &bkpPath) const;
 private:
 	NetworkState(const NetworkState &n);
 	linkIndex_t numLinks;
