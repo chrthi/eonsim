@@ -29,25 +29,20 @@
 #include "NetworkGraph.h"
 #include "NetworkState.h"
 #include "StatCounter.h"
-
-class ProvisioningScheme{
-public:
-	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, NetworkGraph::DijkstraData &data, const Request &r) =0;
-	virtual ~ProvisioningScheme() {};
-};
+#include "provisioning_schemes/ProvisioningScheme.h"
 
 class Simulation {
 public:
-	Simulation(const NetworkGraph &topology, ProvisioningScheme &p);
-	const StatCounter &run(unsigned long itersDiscard, unsigned long itersTotal,
+	Simulation(const NetworkGraph &topology);
+	const StatCounter run(ProvisioningScheme &provision,
+			unsigned long itersDiscard, unsigned long itersTotal,
 			unsigned int avg_interarrival,unsigned int avg_holding);
 	~Simulation();
+	void reset();
 private:
 	const NetworkGraph& topology;
+	const NetworkGraph::DijkstraData scratchpad;
 	NetworkState state;
-	NetworkGraph::DijkstraData scratchpad;
-	ProvisioningScheme &provision;
-	StatCounter count;
 	std::multimap<unsigned long, Provisioning> activeConnections;
 };
 

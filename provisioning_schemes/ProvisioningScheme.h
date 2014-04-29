@@ -1,5 +1,5 @@
 /**
- * @file ArasFFProvisioning.h
+ * @file ProvisioningScheme.h
  *
  */
 
@@ -20,22 +20,23 @@
  * along with SPP EON Simulator.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ARASFFPROVISIONING_H_
-#define ARASFFPROVISIONING_H_
+#ifndef PROVISIONINGSCHEME_H_
+#define PROVISIONINGSCHEME_H_
 
 #include <iostream>
-#include "ProvisioningScheme.h"
 
-class ArasFFProvisioning: public ProvisioningScheme {
+#include "../NetworkGraph.h"
+#include "../NetworkState.h"
+#include "../SimulationMsgs.h"
+
+class ProvisioningScheme {
 public:
-	ArasFFProvisioning(unsigned int k);
-	virtual ~ArasFFProvisioning();
-	virtual ProvisioningScheme *clone();
-	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const NetworkGraph::DijkstraData &data, const Request &r);
+	virtual ~ProvisioningScheme();
+	virtual ProvisioningScheme *clone() =0;
+	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const NetworkGraph::DijkstraData &data, const Request &r) =0;
+	friend std::ostream& operator<<(std::ostream& o, ProvisioningScheme const& s);
 protected:
-	virtual std::ostream& print(std::ostream &o) const;
-private:
-	unsigned int k;
+	virtual std::ostream& print(std::ostream &o) const =0;
 };
 
-#endif /* ARASFFPROVISIONING_H_ */
+#endif /* PROVISIONINGSCHEME_H_ */

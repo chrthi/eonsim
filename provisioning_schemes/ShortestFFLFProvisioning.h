@@ -23,17 +23,19 @@
 #ifndef SHORTESTFFLFPROVISIONING_H_
 #define SHORTESTFFLFPROVISIONING_H_
 
-#include <stddef.h>
+#include <iostream>
+#include "ProvisioningScheme.h"
 
-#include "../NetworkGraph.h"
-#include "../NetworkState.h"
-#include "../Simulation.h"
+struct Request;
 
 class ShortestFFLFProvisioning: public ProvisioningScheme {
 public:
 	ShortestFFLFProvisioning();
 	virtual ~ShortestFFLFProvisioning();
-	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, NetworkGraph::DijkstraData &data, const Request &r);
+	virtual ProvisioningScheme *clone();
+	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const NetworkGraph::DijkstraData &data, const Request &r);
+protected:
+	virtual std::ostream& print(std::ostream &o) const;
 };
 
 #endif /* SHORTESTFFLFPROVISIONING_H_ */

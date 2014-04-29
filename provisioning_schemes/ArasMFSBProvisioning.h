@@ -23,15 +23,17 @@
 #ifndef ARASMFSBPROVISIONING_H_
 #define ARASMFSBPROVISIONING_H_
 
-#include "../NetworkGraph.h"
-#include "../NetworkState.h"
-#include "../Simulation.h"
+#include <iostream>
+#include "ProvisioningScheme.h"
 
 class ArasMFSBProvisioning: public ProvisioningScheme {
 public:
 	ArasMFSBProvisioning(unsigned int k);
 	virtual ~ArasMFSBProvisioning();
-	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, NetworkGraph::DijkstraData &data, const Request &r);
+	virtual ProvisioningScheme *clone();
+	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const NetworkGraph::DijkstraData &data, const Request &r);
+protected:
+	virtual std::ostream& print(std::ostream &o) const;
 private:
 	unsigned int k;
 };

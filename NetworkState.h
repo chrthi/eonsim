@@ -40,6 +40,7 @@ public:
 	virtual ~NetworkState();
 	void provision(const Provisioning &p);
 	void terminate(const Provisioning &p);
+	void reset();
 	typedef std::bitset<NUM_SLOTS> spectrum_bits;
 	spectrum_bits priAvailability(const NetworkGraph::Path &priPath) const;
 	spectrum_bits bkpAvailability(

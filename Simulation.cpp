@@ -33,16 +33,15 @@
 Simulation::~Simulation() {
 }
 
-Simulation::Simulation(const NetworkGraph& topology, ProvisioningScheme& p):
+Simulation::Simulation(const NetworkGraph& topology):
 				topology(topology),
-				state(topology),
 				scratchpad(topology),
-				provision(p),
-				count(0)
+				state(topology)
 {}
 
-const StatCounter& Simulation::run(unsigned long itersDiscard,
-		unsigned long itersTotal,unsigned int avg_interarrival,unsigned int avg_holding) {
+const StatCounter Simulation::run(ProvisioningScheme &provision,
+		unsigned long itersDiscard, unsigned long itersTotal,
+		unsigned int avg_interarrival, unsigned int avg_holding) {
 	boost::random::taus88 rng(0);
 	boost::random::exponential_distribution<> requestTimeGen(1.0/avg_interarrival);
 	boost::random::exponential_distribution<> holdingTimeGen(1.0/avg_holding);
@@ -51,7 +50,7 @@ const StatCounter& Simulation::run(unsigned long itersDiscard,
 	boost::random::uniform_int_distribution<unsigned int> bandwidthGen(ceil(10/SLOT_WIDTH),ceil(400/SLOT_WIDTH)); //todo decide proper bandwidth limits
 	unsigned long nextRequestTime=0;
 	unsigned long currentTime=0;
-	count.reset(itersDiscard);
+	StatCounter count(itersDiscard);
 	for(unsigned long i=0; i<itersTotal; ++i) {
 		//terminate all connections that should have terminated by now
 		for(std::map<unsigned long, Provisioning>::iterator nextTerm=activeConnections.begin();
@@ -86,7 +85,6 @@ const StatCounter& Simulation::run(unsigned long itersDiscard,
 
 		//Run the provisioning algorithm
 		Provisioning p=provision(topology,state,scratchpad,r);
-		//todo how to handle blockings?
 
 		count.countProvisioning(p.state,p.bandwidth);
 
@@ -103,4 +101,9 @@ const StatCounter& Simulation::run(unsigned long itersDiscard,
 		nextRequestTime=currentTime+lrint(requestTimeGen(rng));
 	}
 	return count;
+}
+
+void Simulation::reset() {
+	scratchpad.resetWeights();
+	state.reset();
 }

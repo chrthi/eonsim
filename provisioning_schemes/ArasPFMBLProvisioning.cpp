@@ -31,11 +31,10 @@ ArasPFMBLProvisioning::ArasPFMBLProvisioning(unsigned int k, unsigned int c1):
 }
 
 ArasPFMBLProvisioning::~ArasPFMBLProvisioning() {
-	// TODO Auto-generated destructor stub
 }
 
 Provisioning ArasPFMBLProvisioning::operator ()(const NetworkGraph& g,
-		const NetworkState& s, NetworkGraph::DijkstraData &data, const Request& r) {
+		const NetworkState& s, const NetworkGraph::DijkstraData &data, const Request& r) {
 	Provisioning result;
 	result.bandwidth=r.bandwidth;
 	result.priSpecEnd=0;
@@ -107,7 +106,7 @@ Provisioning ArasPFMBLProvisioning::operator ()(const NetworkGraph& g,
 			if(spec[i]) {
 				count=0;
 			} else if(++count>=neededSpec) {
-				unsigned int cost=(NUM_SLOTS-i)*c1+neededSpec*1000u;
+				unsigned int cost=c1?(NUM_SLOTS-i):(NUM_SLOTS-i)*c1+neededSpec*1000u;
 				if(cost<bestCost) {
 					bestCost=cost;
 					bestPath=&p;
@@ -127,4 +126,12 @@ Provisioning ArasPFMBLProvisioning::operator ()(const NetworkGraph& g,
 		result.state=Provisioning::BLOCK_SEC_NOSPEC;
 	}
 	return result;
+}
+
+std::ostream& ArasPFMBLProvisioning::print(std::ostream& o) const {
+	return o<<"PFMBL,"<<k<<','<<c1;
+}
+
+ProvisioningScheme* ArasPFMBLProvisioning::clone() {
+	return new ArasPFMBLProvisioning(*this);
 }

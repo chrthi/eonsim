@@ -38,7 +38,7 @@ ArasFFProvisioning::~ArasFFProvisioning() {
 }
 
 Provisioning ArasFFProvisioning::operator ()(const NetworkGraph& g,
-		const NetworkState& s, NetworkGraph::DijkstraData &data, const Request& r) {
+		const NetworkState& s, const NetworkGraph::DijkstraData &data, const Request& r) {
 	Provisioning result;
 	result.bandwidth=r.bandwidth;
 	result.priSpecEnd=0;
@@ -129,4 +129,12 @@ Provisioning ArasFFProvisioning::operator ()(const NetworkGraph& g,
 
 	result.state=Provisioning::SUCCESS;
 	return result;
+}
+
+std::ostream& ArasFFProvisioning::print(std::ostream& o) const {
+	return o<<"FF,"<<k;
+}
+
+ProvisioningScheme* ArasFFProvisioning::clone() {
+	return new ArasFFProvisioning(*this);
 }

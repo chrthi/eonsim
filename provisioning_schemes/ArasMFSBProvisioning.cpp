@@ -33,7 +33,7 @@ ArasMFSBProvisioning::~ArasMFSBProvisioning() {
 }
 
 Provisioning ArasMFSBProvisioning::operator ()(const NetworkGraph& g,
-		const NetworkState& s, NetworkGraph::DijkstraData &data, const Request& r) {
+		const NetworkState& s, const NetworkGraph::DijkstraData &data, const Request& r) {
 	Provisioning result;
 	result.bandwidth=r.bandwidth;
 	result.priSpecEnd=0;
@@ -130,4 +130,12 @@ Provisioning ArasMFSBProvisioning::operator ()(const NetworkGraph& g,
 		result.state=Provisioning::BLOCK_SEC_NOSPEC;
 	}
 	return result;
+}
+
+std::ostream& ArasMFSBProvisioning::print(std::ostream& o) const {
+	return o<<"MFSB,"<<k;
+}
+
+ProvisioningScheme* ArasMFSBProvisioning::clone() {
+	return new ArasMFSBProvisioning(*this);
 }

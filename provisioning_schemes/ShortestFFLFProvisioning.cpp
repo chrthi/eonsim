@@ -47,7 +47,7 @@ ShortestFFLFProvisioning::~ShortestFFLFProvisioning() {
 }
 
 Provisioning ShortestFFLFProvisioning::operator ()(const NetworkGraph& g,
-		const NetworkState& s, NetworkGraph::DijkstraData &data, const Request& r) {
+		const NetworkState& s, const NetworkGraph::DijkstraData &data, const Request& r) {
 	Provisioning result;
 	result.bandwidth=r.bandwidth;
 
@@ -126,4 +126,12 @@ Provisioning ShortestFFLFProvisioning::operator ()(const NetworkGraph& g,
 	result.state=Provisioning::SUCCESS;
 
 	return result;
+}
+
+std::ostream& ShortestFFLFProvisioning::print(std::ostream& o) const {
+	return o<<"ShFFLF";
+}
+
+ProvisioningScheme* ShortestFFLFProvisioning::clone() {
+	return new ShortestFFLFProvisioning(*this);
 }

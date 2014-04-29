@@ -23,13 +23,17 @@
 #ifndef KSQHYBRIDCOSTPROVISIONING_H_
 #define KSQHYBRIDCOSTPROVISIONING_H_
 
-#include "../Simulation.h"
+#include <iostream>
+#include "ProvisioningScheme.h"
 
 class KsqHybridCostProvisioning: public ProvisioningScheme {
 public:
 	KsqHybridCostProvisioning(unsigned int k_pri, unsigned int k_bkp);
 	virtual ~KsqHybridCostProvisioning();
-	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, NetworkGraph::DijkstraData &data, const Request &r);
+	virtual ProvisioningScheme *clone();
+	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const NetworkGraph::DijkstraData &data, const Request &r);
+protected:
+	virtual std::ostream& print(std::ostream &o) const;
 private:
 	unsigned int k_pri; ///< Number of paths to consider for the primary
 	unsigned int k_bkp; ///< Number of paths to consider for backup, per primary
