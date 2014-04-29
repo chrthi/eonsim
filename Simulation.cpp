@@ -47,7 +47,9 @@ const StatCounter Simulation::run(ProvisioningScheme &provision,
 	boost::random::exponential_distribution<> holdingTimeGen(1.0/avg_holding);
 	boost::random::uniform_int_distribution<size_t> sourceGen(0,num_vertices(topology.g)-1);
 	boost::random::uniform_int_distribution<size_t> destGen(0,num_vertices(topology.g)-2);
-	boost::random::uniform_int_distribution<unsigned int> bandwidthGen(ceil(10/SLOT_WIDTH),ceil(400/SLOT_WIDTH)); //todo decide proper bandwidth limits
+	boost::random::uniform_int_distribution<unsigned int>bandwidthGen(
+			ceil(DEFAULT_BW_MIN/SLOT_WIDTH),
+			ceil(DEFAULT_BW_MAX/SLOT_WIDTH));
 	unsigned long nextRequestTime=0;
 	unsigned long currentTime=0;
 	StatCounter count(itersDiscard);
@@ -67,6 +69,8 @@ const StatCounter Simulation::run(ProvisioningScheme &provision,
 
 			//remove the connection from the list
 			activeConnections.erase(nextTerm);
+
+			count.countNetworkState(state);
 		}
 
 		//update simulation time
@@ -76,9 +80,9 @@ const StatCounter Simulation::run(ProvisioningScheme &provision,
 
 		//Generate a random request
 		Request r;
-		size_t sourceIndex=sourceGen(rng);
+		nodeIndex_t sourceIndex=sourceGen(rng);
 		r.source=vertex(sourceIndex,topology.g);
-		size_t destIndex=destGen(rng);
+		nodeIndex_t destIndex=destGen(rng);
 		if(destIndex>=sourceIndex) ++destIndex;
 		r.dest=vertex(destIndex,topology.g);
 		r.bandwidth=bandwidthGen(rng);
@@ -95,6 +99,8 @@ const StatCounter Simulation::run(ProvisioningScheme &provision,
 			//Add the connection to the active connection list with an expiry time
 			activeConnections.insert(std::pair<const unsigned long, Provisioning>(
 					currentTime+lrint(holdingTimeGen(rng)),p));
+
+			count.countNetworkState(state);
 		}
 
 		//decide the time for the next request

@@ -20,15 +20,21 @@
  * along with SPP EON Simulator.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <sys/time.h>
-#include <array>
+#include <stddef.h>
+#include <algorithm>
 #include <condition_variable>
-#include <ctime>
+#include <functional>
 #include <iomanip>
 #include <iostream>
+#include <iterator>
+#include <map>
+#include <memory>
 #include <mutex>
 #include <thread>
+#include <utility>
+#include <vector>
 
+#include "globaldef.h"
 #include "NetworkGraph.h"
 #include "provisioning_schemes/ArasFFProvisioning.h"
 #include "provisioning_schemes/ArasMFSBProvisioning.h"
@@ -37,13 +43,6 @@
 #include "provisioning_schemes/ShortestFFLFProvisioning.h"
 #include "Simulation.h"
 #include "StatCounter.h"
-
-/*
-static inline unsigned long timediff(const timespec &start, const timespec &end)
-{
-	return (end.tv_sec-start.tv_sec)*1000000000ul+end.tv_nsec-start.tv_nsec;
-}
-*/
 
 struct WorkPackage{
 	size_t index;
@@ -72,8 +71,8 @@ void consume (const NetworkGraph &g) {
 		if(!mywork.p) return;
 		//do the work here
 		sim.reset();
-		std::cerr<<mywork.load<<'-'<<std::this_thread::get_id()<<std::endl;
-		StatCounter cnt=sim.run(*mywork.p,1000,10000,1000,1000*mywork.load);
+		StatCounter cnt=sim.run(*mywork.p,DEFAULT_SIM_DISCARD,DEFAULT_SIM_ITERS,
+				DEFAULT_AVG_INTARRIVAL,DEFAULT_AVG_INTARRIVAL*mywork.load);
 		{
 			std::unique_lock<std::mutex> lck(mtx);
 			results.emplace(std::make_pair(mywork.index,std::make_pair(std::move(mywork),std::move(cnt))));
@@ -84,35 +83,39 @@ void consume (const NetworkGraph &g) {
 }
 
 int main(int argc, char **argv) {
-	//timespec tp1, tp2;
-
 	std::ifstream in("input/input_att_d.txt");
 	NetworkGraph g=NetworkGraph::loadFromMatrix(in);
 	in.close();
 
-	std::vector<std::thread> threadPool(3);
+	//const unsigned int nthreads=(std::thread::hardware_concurrency()+1)/2;
+	const unsigned int nthreads=(std::thread::hardware_concurrency()+1)/2;
+	std::cerr<<std::thread::hardware_concurrency()<<" Threads supported; using "<<nthreads<<'.'<<std::endl;
+	std::vector<std::thread> threadPool(nthreads);
 	for(auto &t:threadPool) t=std::thread(consume,std::ref(g));
 
 	ShortestFFLFProvisioning p_fflf;
-	ArasFFProvisioning p_ff(4);
-	ArasMFSBProvisioning p_mfsb(4);
-	ArasPFMBLProvisioning p_pfmbl(4,880);
-	ProvisioningScheme *ps[]={&p_fflf,&p_ff,&p_mfsb,&p_pfmbl};
+	ArasFFProvisioning p_ff(DEFAULT_K);
+	ArasMFSBProvisioning p_mfsb(DEFAULT_K);
+	ArasPFMBLProvisioning p_pfmbl0(DEFAULT_K,0), p_pfmbl1(DEFAULT_K,880);
+	ProvisioningScheme *ps[]={&p_fflf,&p_ff,&p_mfsb,&p_pfmbl0,&p_pfmbl1};
 	size_t resultIdx=0;
+	const size_t totalWp=(sizeof(ps)/sizeof(*ps))
+			*((DEFAULT_LOAD_MAX-DEFAULT_LOAD_MIN+DEFAULT_LOAD_STEP)/DEFAULT_LOAD_STEP);
 
 	//stuff new work packages into the thread pool
 	ProvisioningScheme **p=ps;
-	nextWork.load=145;
+	nextWork.load=DEFAULT_LOAD_MIN-DEFAULT_LOAD_STEP;
 	nextWork.index=-1;
 	while(p || resultIdx<nextWork.index) {
+		bool printStat=false;
 		{
 			std::unique_lock<std::mutex> lck(mtx);
 			cvMain.wait(lck,[]{return !newWork || newResult;});
 			if(!newWork) {
 				if(p) {
-					nextWork.load+=5;
-					if(nextWork.load>200) {
-						nextWork.load=150;
+					nextWork.load+=DEFAULT_LOAD_STEP;
+					if(nextWork.load>DEFAULT_LOAD_MAX) {
+						nextWork.load=DEFAULT_LOAD_MIN;
 						++p;
 					}
 					if(p>=ps+sizeof(ps)/sizeof(*ps)) p=0;
@@ -129,29 +132,28 @@ int main(int argc, char **argv) {
 				for(auto it=results.begin();
 						it!=results.end() && it->first==resultIdx;
 						++it, ++resultIdx, results.erase(std::prev(it)) ) {
-					std::cerr<<resultIdx<<": "<<*(it->second.first.p)<<','
-							<<it->second.first.load<<std::endl;
+					std::cout<<
+							//provisioning scheme and its parameters
+							*(it->second.first.p)<<SEPARATOR_CHAR
+							//Load value
+							<<it->second.first.load<<SEPARATOR_CHAR
+							//Statistics
+							<<it->second.second<<SEPARATOR_CHAR
+							<<std::endl;
 				}
 				newResult=false;
+				printStat=true;
 			}
 		}
 		if(p) cvWorker.notify_one();
 		else cvWorker.notify_all();
+		if(printStat) {
+			std::cout.flush();
+			std::cerr<<'['<<std::setw(3)<<(resultIdx+1)*100/totalWp<<std::setw(0)<<"%] "
+					<<(resultIdx+1)<<" / "<<totalWp<<" done."<<std::endl;
+		}
 	}
 	//wait for all threads to finish
 	for(auto &t:threadPool) t.join();
 	return 0;
-/*
-	//for parameters...
-	{
-		ArasPFMBLProvisioning p(4,880);
-		//KsqHybridCostProvisioning p(5,5);
-		Simulation s(g,p);
-		clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&tp1);
-		const StatCounter &stats=s.run(10000,100000,1000,200000);
-		clock_gettime(CLOCK_PROCESS_CPUTIME_ID,&tp2);
-		std::cout<<stats;
-	}
-	std::cout<<std::setw(11)<<timediff(tp1,tp2)<<" ns"<<std::endl;
-	*/
 }

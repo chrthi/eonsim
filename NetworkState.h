@@ -50,6 +50,14 @@ public:
 			const NetworkGraph::Path &priPath,
 			const NetworkGraph::Path &bkpPath) const;
 	specIndex_t countFreeBlocks(const NetworkGraph::Path &bkpPath, specIndex_t i) const;
+	unsigned long getTotalPri() const;
+	specIndex_t getFreeSpectrum(linkIndex_t l) const;
+	specIndex_t getLargestSegment(linkIndex_t l) const;
+
+	linkIndex_t getNumLinks() const {
+		return numLinks;
+	}
+
 private:
 	NetworkState(const NetworkState &n);
 	linkIndex_t numLinks;

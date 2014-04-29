@@ -35,7 +35,12 @@ StatCounter::StatCounter(const unsigned long discard) :
 	nTerminated(),
 	bwBlocked(),
 	bwProvisioned(),
-	bwTerminated()
+	bwTerminated(),
+	sharability(),
+	fragmentation(),
+	specUtil(),
+	numLinks(),
+	stateCounts()
 {}
 
 StatCounter::~StatCounter() {
@@ -55,6 +60,10 @@ void StatCounter::reset(const unsigned long discard) {
 	std::fill(bwBlocked,bwBlocked+Provisioning::SUCCESS+1,0.0);
 	bwProvisioned=0;
 	bwTerminated=0;
+	sharability=0;
+	fragmentation=0;
+	specUtil=0;
+	stateCounts=0;
 }
 
 /**
@@ -86,6 +95,25 @@ void StatCounter::countTermination(bandwidth_t bandwidth) {
 	}
 }
 
+//max. 10^11 seems to be safe for 64-bit ints
+#define FAC_SHAR 1000000000ul
+#define FAC_FRAG 1000000000ul
+
+void StatCounter::countNetworkState(const NetworkState& s) {
+	if(discard) return;
+	unsigned long int primary=s.getTotalPri();
+	unsigned long int anyUse=0;
+	numLinks=s.getNumLinks();
+	for(linkIndex_t i=0; i<numLinks; ++i) {
+		specIndex_t free=s.getFreeSpectrum(i);
+		anyUse+=free;
+		fragmentation+=FAC_FRAG-FAC_FRAG*s.getLargestSegment(i)/(NUM_SLOTS-free);
+	}
+	specUtil+=anyUse;
+	sharability+=FAC_SHAR*primary/(anyUse-primary);
+	++stateCounts;
+}
+
 /**
  * Output an event type as human-readable text.
  * This provides an iostream output operator so that event types can be
@@ -114,6 +142,27 @@ std::ostream& operator<<(std::ostream &o, const StatCounter &s) {
 		events_sum+=s.nBlockings[e];
 		bandwidth_sum+=s.bwBlocked[e];
 	}
+	//Blocking probability
+	o<< (double)(events_sum-s.nProvisioned)/events_sum<<SEPARATOR_CHAR
+			//Bandwidth blocking probability
+			<< (double)(bandwidth_sum-s.bwProvisioned)/bandwidth_sum<<SEPARATOR_CHAR
+			//Sharability
+			<< (double) s.sharability/(FAC_SHAR*s.stateCounts)<<SEPARATOR_CHAR
+			//Fragmentation
+			<< (double) s.fragmentation/(FAC_FRAG*s.numLinks*s.stateCounts)<<SEPARATOR_CHAR
+			//Spectrum Utilization
+			<< (double) s.specUtil/(NUM_SLOTS*s.numLinks*s.stateCounts);
+
+	return o;
+}
+/*
+std::ostream& operator<<(std::ostream &o, const StatCounter &s) {
+	unsigned long events_sum=s.nProvisioned;
+	unsigned long bandwidth_sum=s.bwProvisioned;
+	for(int e=0; e<Provisioning::SUCCESS; ++e) {
+		events_sum+=s.nBlockings[e];
+		bandwidth_sum+=s.bwBlocked[e];
+	}
 	for(int e=0; e<Provisioning::SUCCESS; ++e)
 		o << static_cast<Provisioning::state_t>(e)
 		  << boost::format(": %6lu conns (%6.3f%%); %8.1f Gbps (%6.3f%%)") %
@@ -132,3 +181,4 @@ std::ostream& operator<<(std::ostream &o, const StatCounter &s) {
 	  << std::endl;
 	return o;
 }
+*/

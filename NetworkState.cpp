@@ -133,3 +133,24 @@ specIndex_t NetworkState::countFreeBlocks(const NetworkGraph::Path& bkpPath,
 		if(!anyUse[e.idx][i]) ++result;
 	return result;
 }
+
+unsigned long NetworkState::getTotalPri() const {
+	unsigned long result=0;
+	for(size_t i=0; i<numLinks; ++i) result+=primaryUse[i].count();
+	return result;
+}
+
+specIndex_t NetworkState::getFreeSpectrum(linkIndex_t l) const {
+	return anyUse[l].count();
+}
+
+specIndex_t NetworkState::getLargestSegment(linkIndex_t l) const {
+	specIndex_t result=0, count=0;
+	for(int i=0; i<NUM_SLOTS; ++i) {
+		if(anyUse[l][i])
+			count=0;
+		else if(++count>result)
+			result=count;
+	}
+	return result;
+}

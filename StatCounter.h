@@ -23,9 +23,11 @@
 #ifndef STATCOUNTER_H_
 #define STATCOUNTER_H_
 
+#include <cstdint>
 #include <iostream>
 
 #include "globaldef.h"
+#include "NetworkState.h"
 #include "SimulationMsgs.h"
 
 class StatCounter {
@@ -35,6 +37,7 @@ public:
 	void reset(const unsigned long discard);
 	void countProvisioning(const Provisioning::state_t state, bandwidth_t bandwidth);
 	void countTermination(bandwidth_t bandwidth);
+	void countNetworkState(const NetworkState &s);
 	friend std::ostream& operator<<(std::ostream &o, const StatCounter &s);
 private:
 	/**
@@ -55,6 +58,12 @@ private:
 	unsigned long bwBlocked[Provisioning::SUCCESS];
 	unsigned long bwProvisioned; ///< Total bandwidth of connections that were successfully provisioned.
 	unsigned long bwTerminated; ///< Total bandwidth of connections that were terminated.
+
+	uint64_t sharability;
+	uint64_t fragmentation;
+	uint64_t specUtil;
+	linkIndex_t numLinks;
+	uint64_t stateCounts;
 };
 
 #endif /* STATCOUNTER_H_ */

@@ -29,6 +29,24 @@
 #define DISTANCE_UNIT 12.5
 #define NUM_SLOTS 320
 
+#define DEFAULT_SIM_ITERS  100000
+#define DEFAULT_SIM_DISCARD 10000
+
+#define DEFAULT_AVG_INTARRIVAL 1000
+
+#define DEFAULT_K 4
+
+#define DEFAULT_LOAD_MIN 150
+#define DEFAULT_LOAD_MAX 200
+#define DEFAULT_LOAD_STEP  5
+
+#define DEFAULT_BW_MIN  10
+#define DEFAULT_BW_MAX 400
+
+#define DEFAULT_GUARDBAND 1
+
+#define SEPARATOR_CHAR ','
+
 typedef unsigned short specIndex_t;
 typedef unsigned short bandwidth_t;
 typedef unsigned short nodeIndex_t;

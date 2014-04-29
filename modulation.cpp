@@ -49,7 +49,8 @@ modulation_t calcModulation(distance_t reach) {
 }
 
 specIndex_t calcNumSlots(bandwidth_t bw, modulation_t mod) {
-	return bw % modulations[mod].bitPerSymbol ?
+	return  DEFAULT_GUARDBAND + (
+			bw % modulations[mod].bitPerSymbol ?
 			bw / modulations[mod].bitPerSymbol + 1 :
-			bw / modulations[mod].bitPerSymbol;
+			bw / modulations[mod].bitPerSymbol);
 }
