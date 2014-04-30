@@ -65,7 +65,7 @@ void consume (const NetworkGraph &g) {
 			cvWorker.wait(lck,[]{return newWork;});
 			// consume:
 			mywork=std::move(nextWork);
-			newWork=false;
+			if(mywork.p) newWork=false;
 		}
 		cvMain.notify_one();
 		if(!mywork.p) return;
@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
 	in.close();
 
 	//const unsigned int nthreads=(std::thread::hardware_concurrency()+1)/2;
-	const unsigned int nthreads=(std::thread::hardware_concurrency()+1)/2;
+	const unsigned int nthreads=std::thread::hardware_concurrency()-1;
 	std::cerr<<std::thread::hardware_concurrency()<<" Threads supported; using "<<nthreads<<'.'<<std::endl;
 	std::vector<std::thread> threadPool(nthreads);
 	for(auto &t:threadPool) t=std::thread(consume,std::ref(g));
@@ -106,7 +106,7 @@ int main(int argc, char **argv) {
 	ProvisioningScheme **p=ps;
 	nextWork.load=DEFAULT_LOAD_MIN-DEFAULT_LOAD_STEP;
 	nextWork.index=-1;
-	while(p || resultIdx<nextWork.index) {
+	while(p || resultIdx<=nextWork.index) {
 		bool printStat=false;
 		{
 			std::unique_lock<std::mutex> lck(mtx);
@@ -149,8 +149,8 @@ int main(int argc, char **argv) {
 		else cvWorker.notify_all();
 		if(printStat) {
 			std::cout.flush();
-			std::cerr<<'['<<std::setw(3)<<(resultIdx+1)*100/totalWp<<std::setw(0)<<"%] "
-					<<(resultIdx+1)<<" / "<<totalWp<<" done."<<std::endl;
+			std::cerr<<'['<<std::setw(3)<<resultIdx*100/totalWp<<std::setw(0)<<"%] "
+					<<resultIdx<<" / "<<totalWp<<" done."<<std::endl;
 		}
 	}
 	//wait for all threads to finish
