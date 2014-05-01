@@ -30,11 +30,14 @@
 #include "NetworkGraph.h"
 #include "Simulation.h"
 
+#define DEBUG
+
 NetworkState::NetworkState(const NetworkGraph& topology) :
 numLinks(boost::num_edges(topology.g)),
 primaryUse(new spectrum_bits[numLinks]),
 anyUse(new spectrum_bits[numLinks]),
-sharing(new spectrum_bits[numLinks*numLinks])
+sharing(new spectrum_bits[numLinks*numLinks]),
+currentBkpBw(0)
 {
 }
 
@@ -48,6 +51,10 @@ void NetworkState::provision(const Provisioning &p) {
 	typedef NetworkGraph::Path::const_iterator edgeIt;
 	for(edgeIt it=p.priPath.begin(); it!=p.priPath.end(); ++it) {
 		for(specIndex_t i=p.priSpecBegin;i<p.priSpecEnd;++i) {
+#ifdef DEBUG
+			assert(!primaryUse[it->idx][i]);
+			assert(!anyUse[it->idx][i]);
+#endif
 			primaryUse[it->idx][i]=true;
 			anyUse[it->idx][i]=true;
 		}
@@ -55,10 +62,30 @@ void NetworkState::provision(const Provisioning &p) {
 	for(edgeIt it=p.bkpPath.begin(); it!=p.bkpPath.end(); ++it)
 		for(specIndex_t i=p.bkpSpecBegin;i<p.bkpSpecEnd;++i)
 			anyUse[it->idx][i]=true;
+/*	if(...) {
+		std::cerr<<p.priPath<<"; "<<p.bkpPath<<'\n'
+				<<bkpAvailability(p.priPath,p.bkpPath).to_string('_','X')<<'\n';
+		std::cerr.flush();
+	}
+*/
 	for(edgeIt itb=p.bkpPath.begin(); itb!=p.bkpPath.end(); ++itb)
-		for(edgeIt itp=p.priPath.begin(); itp!=p.priPath.end(); ++itp)
-			for(specIndex_t i=p.bkpSpecBegin;i<p.bkpSpecEnd;++i)
+		for(edgeIt itp=p.priPath.begin(); itp!=p.priPath.end(); ++itp) {
+#ifdef DEBUG
+			assert(itb->idx!=itp->idx);
+#endif
+			for(specIndex_t i=p.bkpSpecBegin;i<p.bkpSpecEnd;++i) {
+#ifdef DEBUG
+				if(sharing[itb->idx*numLinks+itp->idx][i]) {
+					std::cerr<<i<<'\n'<<
+							(sharing[itb->idx*numLinks+itp->idx]).to_string('_','X')<<'\n';
+					std::cerr<<bkpAvailability(p.priPath,p.bkpPath).to_string('_','X')<<'\n';
+					assert(false);
+				}
+#endif
 				sharing[itb->idx*numLinks+itp->idx][i]=true;
+			}
+		}
+	currentBkpBw+=(p.bkpSpecEnd-p.bkpSpecBegin)*p.bkpPath.size();
 }
 
 void NetworkState::terminate(const Provisioning &p) {
@@ -86,6 +113,7 @@ void NetworkState::terminate(const Provisioning &p) {
 		for(linkIndex_t i=0; i<numLinks; ++i)
 			anyUse[itb->idx]|=shb[i];
 	}
+	currentBkpBw-=(p.bkpSpecEnd-p.bkpSpecBegin)*p.bkpPath.size();
 }
 
 NetworkState::spectrum_bits NetworkState::priAvailability(
@@ -140,8 +168,44 @@ unsigned long NetworkState::getTotalPri() const {
 	return result;
 }
 
-specIndex_t NetworkState::getFreeSpectrum(linkIndex_t l) const {
+specIndex_t NetworkState::getUsedSpectrum(linkIndex_t l) const {
 	return anyUse[l].count();
+}
+
+void NetworkState::sanityCheck(
+		const std::multimap<unsigned long, Provisioning>& conns) const {
+	unsigned int totalHops=0;
+	for(auto const &c:conns) {
+		totalHops+=c.second.priPath.size();
+		for(auto const &ep:c.second.priPath) {
+			for(specIndex_t i=c.second.priSpecBegin; i<c.second.priSpecEnd; ++i) {
+				assert(primaryUse[ep.idx][i]);
+				assert(anyUse[ep.idx][i]);
+			}
+		}
+		for(auto const &eb:c.second.bkpPath) {
+			for(specIndex_t i=c.second.bkpSpecBegin; i<c.second.bkpSpecEnd; ++i) {
+				assert(!primaryUse[eb.idx][i]);
+				assert(anyUse[eb.idx][i]);
+			}
+			for(auto const &ep:c.second.priPath) {
+				for(specIndex_t i=c.second.bkpSpecBegin; i<c.second.bkpSpecEnd; ++i) {
+					assert(sharing[eb.idx*numLinks+ep.idx][i]);
+				}
+			}
+		}
+	}
+	for(linkIndex_t b=0; b<numLinks; ++b) {
+		spectrum_bits anyUseTest=primaryUse[b];
+		spectrum_bits * const shb=sharing+b*numLinks;
+		for(linkIndex_t p=0; p<numLinks; ++p)
+			anyUseTest|=shb[p];
+		assert(anyUse[b]==anyUseTest);
+	}
+}
+
+uint64_t NetworkState::getCurrentBkpBw() const {
+	return currentBkpBw;
 }
 
 specIndex_t NetworkState::getLargestSegment(linkIndex_t l) const {

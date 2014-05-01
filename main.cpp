@@ -22,15 +22,17 @@
 
 #include <stddef.h>
 #include <algorithm>
-#include <condition_variable>
 #include <functional>
 #include <iomanip>
 #include <iostream>
 #include <iterator>
 #include <map>
 #include <memory>
+#ifndef NOTHREAD
 #include <mutex>
+#include <condition_variable>
 #include <thread>
+#endif
 #include <utility>
 #include <vector>
 
@@ -48,15 +50,15 @@ struct WorkPackage{
 	size_t index;
 	std::unique_ptr<ProvisioningScheme> p;
 	unsigned int load;
-};
+} nextWork;
 
+#ifndef NOTHREAD
 std::mutex mtx;
 std::condition_variable cvWorker, cvMain;
 bool newWork, newResult;
-WorkPackage nextWork;
 std::map<size_t,std::pair<WorkPackage,const StatCounter>> results;
 
-void consume (const NetworkGraph &g) {
+static void worker(const NetworkGraph &g) {
 	Simulation sim(g);
 	while(true) {
 		WorkPackage mywork;
@@ -70,55 +72,81 @@ void consume (const NetworkGraph &g) {
 		cvMain.notify_one();
 		if(!mywork.p) return;
 		//do the work here
-		sim.reset();
 		StatCounter cnt=sim.run(*mywork.p,DEFAULT_SIM_DISCARD,DEFAULT_SIM_ITERS,
 				DEFAULT_AVG_INTARRIVAL,DEFAULT_AVG_INTARRIVAL*mywork.load);
 		{
 			std::unique_lock<std::mutex> lck(mtx);
-			results.emplace(std::make_pair(mywork.index,std::make_pair(std::move(mywork),std::move(cnt))));
+			results.emplace(std::make_pair(mywork.index,std::make_pair(std::move(mywork),cnt)));
 			newResult=true;
 		}
 		cvMain.notify_one();
 	}
 }
+#endif
+
+#undef DEFAULT_LOAD_STEP
+#define DEFAULT_LOAD_STEP 20
 
 int main(int argc, char **argv) {
 	std::ifstream in("input/input_att_d.txt");
 	NetworkGraph g=NetworkGraph::loadFromMatrix(in);
 	in.close();
 
-	//const unsigned int nthreads=(std::thread::hardware_concurrency()+1)/2;
-	const unsigned int nthreads=std::thread::hardware_concurrency()-1;
+#ifndef NOTHREAD
+	const unsigned int nthreads=std::thread::hardware_concurrency()<4?
+			std::thread::hardware_concurrency(): // for the lab pc (Core2)
+			std::thread::hardware_concurrency()>4?
+					std::thread::hardware_concurrency()/2: // for the ICT server (8*4core Xeon)
+					std::thread::hardware_concurrency()-1; // for my laptop (4-core i7)
+
 	std::cerr<<std::thread::hardware_concurrency()<<" Threads supported; using "<<nthreads<<'.'<<std::endl;
 	std::vector<std::thread> threadPool(nthreads);
-	for(auto &t:threadPool) t=std::thread(consume,std::ref(g));
-
+	for(auto &t:threadPool) t=std::thread(worker,std::ref(g));
+#else
+	Simulation sim(g);
+#endif
 	ShortestFFLFProvisioning p_fflf;
 	ArasFFProvisioning p_ff(DEFAULT_K);
 	ArasMFSBProvisioning p_mfsb(DEFAULT_K);
 	ArasPFMBLProvisioning p_pfmbl0(DEFAULT_K,0), p_pfmbl1(DEFAULT_K,880);
 	ProvisioningScheme *ps[]={&p_fflf,&p_ff,&p_mfsb,&p_pfmbl0,&p_pfmbl1};
-	size_t resultIdx=0;
 	const size_t totalWp=(sizeof(ps)/sizeof(*ps))
 			*((DEFAULT_LOAD_MAX-DEFAULT_LOAD_MIN+DEFAULT_LOAD_STEP)/DEFAULT_LOAD_STEP);
 
 	//stuff new work packages into the thread pool
 	ProvisioningScheme **p=ps;
 	nextWork.load=DEFAULT_LOAD_MIN-DEFAULT_LOAD_STEP;
+	size_t resultIdx=0;
 	nextWork.index=-1;
+	std::cout<<'#'<<TABLE_COL_SEPARATOR
+			<<"Load"<<TABLE_COL_SEPARATOR
+			<<StatCounter::tableHeader<<TABLE_COL_SEPARATOR
+			<<"Algorithm" TABLE_COL_SEPARATOR "Params"
+			<<std::endl;
 	while(p || resultIdx<=nextWork.index) {
+#ifndef NOTHREAD
 		bool printStat=false;
 		{
 			std::unique_lock<std::mutex> lck(mtx);
 			cvMain.wait(lck,[]{return !newWork || newResult;});
 			if(!newWork) {
 				if(p) {
+#endif
 					nextWork.load+=DEFAULT_LOAD_STEP;
 					if(nextWork.load>DEFAULT_LOAD_MAX) {
 						nextWork.load=DEFAULT_LOAD_MIN;
 						++p;
 					}
 					if(p>=ps+sizeof(ps)/sizeof(*ps)) p=0;
+#ifdef NOTHREAD
+					if(p) {
+					const ProvisioningScheme &prov=**p;
+					const unsigned int &load=nextWork.load;
+					StatCounter stat=sim.run(**p,DEFAULT_SIM_DISCARD,DEFAULT_SIM_ITERS,
+							DEFAULT_AVG_INTARRIVAL,DEFAULT_AVG_INTARRIVAL*nextWork.load);
+					++nextWork.index;
+					resultIdx=nextWork.index+1;
+#else
 				}
 				if(!p){
 					nextWork.p=std::unique_ptr<ProvisioningScheme>();
@@ -132,28 +160,36 @@ int main(int argc, char **argv) {
 				for(auto it=results.begin();
 						it!=results.end() && it->first==resultIdx;
 						++it, ++resultIdx, results.erase(std::prev(it)) ) {
-					std::cout<<
-							//provisioning scheme and its parameters
-							*(it->second.first.p)<<SEPARATOR_CHAR
+					const ProvisioningScheme &prov=*(it->second.first.p);
+					const unsigned int &load=it->second.first.load;
+					const StatCounter &stat=it->second.second;
+#endif
+					std::cout<<'T'<<TABLE_COL_SEPARATOR
 							//Load value
-							<<it->second.first.load<<SEPARATOR_CHAR
+							<<load<<TABLE_COL_SEPARATOR
 							//Statistics
-							<<it->second.second<<SEPARATOR_CHAR
+							<<stat<<TABLE_COL_SEPARATOR
+							//provisioning scheme and its parameters
+							<<prov
 							<<std::endl;
+#ifndef NOTHREAD
+					printStat=true;
 				}
 				newResult=false;
-				printStat=true;
 			}
 		}
 		if(p) cvWorker.notify_one();
 		else cvWorker.notify_all();
 		if(printStat) {
+#endif
 			std::cout.flush();
 			std::cerr<<'['<<std::setw(3)<<resultIdx*100/totalWp<<std::setw(0)<<"%] "
 					<<resultIdx<<" / "<<totalWp<<" done."<<std::endl;
 		}
 	}
+#ifndef NOTHREAD
 	//wait for all threads to finish
 	for(auto &t:threadPool) t.join();
+#endif
 	return 0;
 }

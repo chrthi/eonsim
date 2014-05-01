@@ -22,26 +22,26 @@
 
 #include "NetworkGraph.h"
 
-#include <boost/graph/detail/compressed_sparse_row_struct.hpp>
 #include <boost/graph/dijkstra_shortest_paths.hpp>
 #include <boost/graph/named_function_params.hpp>
 #include <boost/graph/properties.hpp>
 #include <boost/property_map/property_map.hpp>
 #include <algorithm>
 #include <cmath>
-#include <iostream>
+#include <cstring>
 #include <iterator>
 #include <limits>
-
-//#include "globaldef.h"
+#include <map>
 
 using namespace boost;
 
 NetworkGraph::NetworkGraph(edgeIterator edge_begin, edgeIterator edge_end,
-		Graph::vertices_size_type numverts, Graph::edges_size_type numedges, distance_t *dists):
-		link_lengths(dists),
+		Graph::vertices_size_type numverts, Graph::edges_size_type numedges, const std::vector<distance_t> &dists):
+		link_lengths(new distance_t[dists.size()]),
 		g(edges_are_sorted,edge_begin,edge_end,numverts,numedges)
 {
+	distance_t *pd=const_cast<distance_t*>(link_lengths);
+	for(auto const &d:dists) *pd++=d;
 }
 
 NetworkGraph::~NetworkGraph() {
@@ -50,35 +50,37 @@ NetworkGraph::~NetworkGraph() {
 
 NetworkGraph NetworkGraph::loadFromMatrix(std::istream &s) {
 	Graph::vertices_size_type n;
-	Graph::edges_size_type l;
-	s>>n>>l;
-	l*=2; //we treat the two directions as separate edges
-	s.ignore(2); // skip the (cr)lf after the link count
-	for(nodeIndex_t i=0; i<n; ++i) {
-		s.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
-	}
+	s>>n;
+	while(isspace(s.peek())) s.ignore(); // skip the (cr)lf after the node count
 	std::vector<std::pair<nodeIndex_t, nodeIndex_t> > edges;
-	edges.reserve(l);
-	distance_t *dists=new distance_t[l];
-	std::vector<nodeIndex_t> lengths;
-	lengths.reserve(l);
-	size_t li=0;
+	std::vector<distance_t> dists;
 	for(nodeIndex_t i=0; i<n; ++i) {
 		for(nodeIndex_t k=0; k<n; ++k) {
 			double d;
 			s>>d;
 			if(d>0.0) {// if(std::isnormal(d)){
 				edges.push_back(std::pair<nodeIndex_t, nodeIndex_t>(i,k));
-				dists[li++]=lrint(d/DISTANCE_UNIT);
+				dists.push_back(lrint(d/DISTANCE_UNIT));
 			}
 		}
 	}
+	return NetworkGraph(edges.begin(),edges.end(),n,edges.size(),dists);
+}
 
-	return NetworkGraph(edges.begin(),edges.end(),n,l,dists);
+void NetworkGraph::printAsDot(std::ostream& s) const {
+	s<<"digraph {\ngraph[overlap=scale, normalize=90];\n";
+	auto es = boost::edges(g);
+	for (auto eit = es.first; eit != es.second; ++eit) {
+		s<<eit->src<<" -> "<<target(*eit,g)
+				<<" [len="<<link_lengths[eit->idx]*0.1
+				<<", label=\"("<<eit->idx<<") "<<link_lengths[eit->idx]<<"\"];\n";
+	}
+	s<<"}\n";
 }
 
 NetworkGraph::DijkstraData::DijkstraData(const NetworkGraph &g):
 		weights(new distance_t[num_edges(g.g)]),
+		tmpWeights(new distance_t[num_edges(g.g)]),
 		dists(new distance_t[num_vertices(g.g)]),
 		preds(new Graph::vertex_descriptor[num_vertices(g.g)]),
 		colors(new unsigned char[num_vertices(g.g)]),
@@ -92,11 +94,13 @@ NetworkGraph::DijkstraData::~DijkstraData() {
 	delete[] colors;
 	delete[] preds;
 	delete[] dists;
+	delete[] tmpWeights;
 	delete[] weights;
 }
 
 void NetworkGraph::DijkstraData::resetWeights() const {
 	memcpy(weights,link_lengths,wSize);
+	memcpy(tmpWeights,link_lengths,wSize);
 }
 
 NetworkGraph::Path NetworkGraph::dijkstra(
@@ -150,27 +154,35 @@ std::vector<NetworkGraph::Path> &NetworkGraph::YenKShortestSearch::getPaths(unsi
 		else return A;
 		if(k==1) return A;
 	}
+	memcpy(data.tmpWeights,data.weights,num_edges(g.g)*sizeof(distance_t));
 	while(A.size()<k) {
 		const Path& prev=*(A.rbegin());
 		distance_t rootD=0;
 		for(nodeIndex_t i=0;i<prev.size(); ++i) {
 			//for all previous paths
 			for(std::vector<Path>::iterator itA=A.begin(); itA!=A.end(); ++itA) {
-				//check if they are identical in the first i edges
-				if(itA->size()<i) continue;
+				//need at least i+1 elements: i to compare, 1 to remove.
+				if(itA->size()<=i) continue;
+				//check if the paths are identical in the first i edges
 				bool sameRoot=true;
 				for(nodeIndex_t k=0; k<i; ++k)
 					if((*itA)[k].idx!=prev[k].idx) {sameRoot=false; break;}
 				//if yes, remove the following edge from the graph.
 				if(sameRoot)
-					data.weights[(*itA)[i].idx]=std::numeric_limits<distance_t>::max();
+					data.tmpWeights[(*itA)[i].idx]=std::numeric_limits<distance_t>::max();
 			}
+
+			//do not allow nodes of the root path to be visited again.
+			//This is easiest accomplished by removing their outward edges.
+			for(auto eit=prev.cbegin(); eit!=prev.cbegin()+i; ++eit)
+				BGL_FORALL_OUTEDGES_T(eit->src,e,g.g,const Graph)
+					data.tmpWeights[e.idx]=std::numeric_limits<distance_t>::max();
 
 			//calculate shortest spur path
 			boost::dijkstra_shortest_paths(
 					g.g,
 					prev[i].src,
-					weight_map(make_iterator_property_map(data.weights,get(edge_index,g.g)))
+					weight_map(make_iterator_property_map(data.tmpWeights,get(edge_index,g.g)))
 					.predecessor_map(make_iterator_property_map(data.preds,get(vertex_index,g.g)))
 					.distance_map(make_iterator_property_map(data.dists,get(vertex_index,g.g)))
 					.color_map(make_iterator_property_map(data.colors,get(vertex_index,g.g)))
@@ -193,7 +205,10 @@ std::vector<NetworkGraph::Path> &NetworkGraph::YenKShortestSearch::getPaths(unsi
 
 			//restore edges
 			for(std::vector<Path>::iterator itA=A.begin(); itA!=A.end(); ++itA)
-				if(itA->size()>i) data.weights[(*itA)[i].idx]=g.link_lengths[(*itA)[i].idx];
+				if(itA->size()>i) data.tmpWeights[(*itA)[i].idx]=data.weights[(*itA)[i].idx];
+			for(auto eit=prev.cbegin(); eit!=prev.cbegin()+i; ++eit)
+				BGL_FORALL_OUTEDGES_T(eit->src,e,g.g,const Graph)
+					data.tmpWeights[e.idx]=data.weights[e.idx];
 
 			rootD+=data.weights[prev[i].idx];
 		}
@@ -220,4 +235,9 @@ void NetworkGraph::YenKShortestSearch::reset(Graph::vertex_descriptor s, Graph::
 	reset();
 	this->s=s;
 	this->d=d;
+}
+
+std::ostream & operator<<(std::ostream &os, const NetworkGraph::Path& p) {
+	for(auto const &e:p) os<<e.src<<'-';
+	return os;
 }

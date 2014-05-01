@@ -32,32 +32,35 @@
 
 class StatCounter {
 public:
-	StatCounter(const unsigned long discard);
+	StatCounter(const uint64_t discard);
 	virtual ~StatCounter();
-	void reset(const unsigned long discard);
-	void countProvisioning(const Provisioning::state_t state, bandwidth_t bandwidth);
-	void countTermination(bandwidth_t bandwidth);
+	void reset(const uint64_t discard);
+	void countProvisioning(const Provisioning&p);
+	void countTermination(const Provisioning&p);
 	void countNetworkState(const NetworkState &s);
 	friend std::ostream& operator<<(std::ostream &o, const StatCounter &s);
+	static const char* const tableHeader;
+	uint64_t getProvisioned() const;
+
 private:
 	/**
 	 * The number of blocking or provisioning events to discard before counting starts.
 	 * This is set by the constructor or the reset() method and counted down when countBwEvent()
 	 * is called. The statistics counting only starts when discard is zero.
 	 */
-	unsigned long discard;
+	uint64_t discard;
 
 	/// Counters for each supported type of event.
-	unsigned long nBlockings[Provisioning::SUCCESS];
-	unsigned long nProvisioned; ///< Number of connections that were successfully provisioned.
-	unsigned long nTerminated; ///< Number of connections that were terminated.
+	uint64_t nBlockings[Provisioning::SUCCESS];
+	uint64_t nProvisioned; ///< Number of connections that were successfully provisioned.
+	uint64_t nTerminated; ///< Number of connections that were terminated.
 	/**
 	 * Bandwidth counters for each supported type of event.
 	 * At each event, one of these is increased by the amount of requested bandwidth.
 	 */
-	unsigned long bwBlocked[Provisioning::SUCCESS];
-	unsigned long bwProvisioned; ///< Total bandwidth of connections that were successfully provisioned.
-	unsigned long bwTerminated; ///< Total bandwidth of connections that were terminated.
+	uint64_t bwBlocked[Provisioning::SUCCESS];
+	uint64_t bwProvisioned; ///< Total bandwidth of connections that were successfully provisioned.
+	uint64_t bwTerminated; ///< Total bandwidth of connections that were terminated.
 
 	uint64_t sharability;
 	uint64_t fragmentation;

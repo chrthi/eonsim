@@ -26,8 +26,9 @@
 #include <boost/graph/compressed_sparse_row_graph.hpp>
 #include <boost/graph/graph_selectors.hpp>
 #include <boost/pending/property.hpp>
-#include <boost/smart_ptr/scoped_array.hpp>
+#include <stddef.h>
 #include <fstream>
+#include <map>
 #include <utility>
 #include <vector>
 
@@ -52,7 +53,7 @@ public:
 	public:
 		DijkstraData(const NetworkGraph &g);
 		~DijkstraData();
-		distance_t *const weights, *const dists;
+		distance_t *const weights, *const tmpWeights, *const dists;
 		Graph::vertex_descriptor *const preds;
 		unsigned char *const colors;
 		void resetWeights() const;
@@ -67,6 +68,7 @@ public:
 //	inline nodeIndex_t getNumNodes() const {return boost::num_vertices(*this); };
 //	inline linkIndex_t getNumLinks() const {return boost::num_edges(*this); };
 
+	void printAsDot(std::ostream &s) const;
 	Path dijkstra(Graph::vertex_descriptor s, Graph::vertex_descriptor d, const DijkstraData &data) const;
 
 	class YenKShortestSearch{
@@ -88,8 +90,10 @@ public:
 private:
 	typedef std::vector<std::pair<nodeIndex_t, nodeIndex_t> >::iterator edgeIterator;
 	NetworkGraph(edgeIterator edge_begin, edgeIterator edge_end,
-			Graph::vertices_size_type numverts, Graph::edges_size_type numedges, distance_t *dists);
+			Graph::vertices_size_type numverts, Graph::edges_size_type numedges, const std::vector<distance_t> &dists);
 
 };
+
+std::ostream & operator<<(std::ostream &os, const NetworkGraph::Path& p);
 
 #endif /* NETWORKGRAPH_H_ */

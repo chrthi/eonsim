@@ -102,7 +102,7 @@ Provisioning ArasPFMBLProvisioning::operator ()(const NetworkGraph& g,
 		const NetworkState::spectrum_bits spec=s.bkpAvailability(result.priPath,p);
 
 		specIndex_t count=0;
-		for(specIndex_t i=NUM_SLOTS; ; --i) {
+		for(specIndex_t i=NUM_SLOTS-1; ; --i) {
 			if(spec[i]) {
 				count=0;
 			} else if(++count>=neededSpec) {
@@ -129,7 +129,7 @@ Provisioning ArasPFMBLProvisioning::operator ()(const NetworkGraph& g,
 }
 
 std::ostream& ArasPFMBLProvisioning::print(std::ostream& o) const {
-	return o<<"PFMBL,"<<k<<','<<c1;
+	return o<<"PFMBL_"<<(c1?'1':'0')<<','<<k<<','<<c1;
 }
 
 ProvisioningScheme* ArasPFMBLProvisioning::clone() {

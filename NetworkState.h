@@ -23,16 +23,13 @@
 #ifndef NETWORKSTATE_H_
 #define NETWORKSTATE_H_
 
-#include <boost/graph/graph_traits.hpp>
 #include <bitset>
-#include <vector>
+#include <cstdint>
+#include <map>
 
 #include "globaldef.h"
 #include "NetworkGraph.h"
-
-struct Provisioning;
-
-class NetworkGraph;
+#include "SimulationMsgs.h"
 
 class NetworkState {
 public:
@@ -51,12 +48,15 @@ public:
 			const NetworkGraph::Path &bkpPath) const;
 	specIndex_t countFreeBlocks(const NetworkGraph::Path &bkpPath, specIndex_t i) const;
 	unsigned long getTotalPri() const;
-	specIndex_t getFreeSpectrum(linkIndex_t l) const;
+	specIndex_t getUsedSpectrum(linkIndex_t l) const;
 	specIndex_t getLargestSegment(linkIndex_t l) const;
 
 	linkIndex_t getNumLinks() const {
 		return numLinks;
 	}
+	void sanityCheck(const std::multimap<unsigned long, Provisioning> &conns) const;
+
+	uint64_t getCurrentBkpBw() const;
 
 private:
 	NetworkState(const NetworkState &n);
@@ -69,6 +69,7 @@ private:
 	 * the backup spectrum in link i that protects primaries in j.
 	 */
 	spectrum_bits *sharing;
+	uint64_t currentBkpBw;
 };
 
 #endif /* NETWORKSTATE_H_ */

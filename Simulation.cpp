@@ -30,6 +30,10 @@
 #include <cmath>
 #include <utility>
 
+#include "globaldef.h"
+#include "provisioning_schemes/ProvisioningScheme.h"
+#include "StatCounter.h"
+
 Simulation::~Simulation() {
 }
 
@@ -52,6 +56,7 @@ const StatCounter Simulation::run(ProvisioningScheme &provision,
 			ceil(DEFAULT_BW_MAX/SLOT_WIDTH));
 	unsigned long nextRequestTime=0;
 	unsigned long currentTime=0;
+	reset();
 	StatCounter count(itersDiscard);
 	for(unsigned long i=0; i<itersTotal; ++i) {
 		//terminate all connections that should have terminated by now
@@ -65,7 +70,7 @@ const StatCounter Simulation::run(ProvisioningScheme &provision,
 			//update the network state with the removed connection
 			state.terminate(nextTerm->second);
 
-			count.countTermination(nextTerm->second.bandwidth);
+			count.countTermination(nextTerm->second);
 
 			//remove the connection from the list
 			activeConnections.erase(nextTerm);
@@ -90,7 +95,7 @@ const StatCounter Simulation::run(ProvisioningScheme &provision,
 		//Run the provisioning algorithm
 		Provisioning p=provision(topology,state,scratchpad,r);
 
-		count.countProvisioning(p.state,p.bandwidth);
+		count.countProvisioning(p);
 
 		if(p.state==Provisioning::SUCCESS) {
 			//update the network state with the new connection
@@ -101,6 +106,8 @@ const StatCounter Simulation::run(ProvisioningScheme &provision,
 					currentTime+lrint(holdingTimeGen(rng)),p));
 
 			count.countNetworkState(state);
+
+			if(count.getProvisioned()%100==1) state.sanityCheck(activeConnections);
 		}
 
 		//decide the time for the next request
@@ -112,4 +119,5 @@ const StatCounter Simulation::run(ProvisioningScheme &provision,
 void Simulation::reset() {
 	scratchpad.resetWeights();
 	state.reset();
+	activeConnections.clear();
 }

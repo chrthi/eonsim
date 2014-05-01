@@ -25,11 +25,12 @@
 
 #include <map>
 
-#include "SimulationMsgs.h"
 #include "NetworkGraph.h"
 #include "NetworkState.h"
-#include "StatCounter.h"
-#include "provisioning_schemes/ProvisioningScheme.h"
+#include "SimulationMsgs.h"
+
+class ProvisioningScheme;
+class StatCounter;
 
 class Simulation {
 public:

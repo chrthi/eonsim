@@ -37,7 +37,7 @@
 #define DEFAULT_K 4
 
 #define DEFAULT_LOAD_MIN 150
-#define DEFAULT_LOAD_MAX 200
+#define DEFAULT_LOAD_MAX 210
 #define DEFAULT_LOAD_STEP  5
 
 #define DEFAULT_BW_MIN  10
@@ -45,7 +45,7 @@
 
 #define DEFAULT_GUARDBAND 1
 
-#define SEPARATOR_CHAR ','
+#define TABLE_COL_SEPARATOR ","
 
 typedef unsigned short specIndex_t;
 typedef unsigned short bandwidth_t;

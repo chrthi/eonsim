@@ -28,7 +28,7 @@
 #include "globaldef.h"
 #include "Simulation.h"
 
-StatCounter::StatCounter(const unsigned long discard) :
+StatCounter::StatCounter(const uint64_t discard) :
 	discard(discard),
 	nBlockings(),
 	nProvisioned(),
@@ -52,7 +52,7 @@ StatCounter::~StatCounter() {
  * a number of future events before counting starts again.
  * @param discard Number of events (provisioning and blocking; terminations do not count) to discard
  */
-void StatCounter::reset(const unsigned long discard) {
+void StatCounter::reset(const uint64_t discard) {
 	this->discard=discard;
 	std::fill(nBlockings,nBlockings+Provisioning::SUCCESS+1,0UL);
 	nProvisioned=0;
@@ -74,24 +74,24 @@ void StatCounter::reset(const unsigned long discard) {
  * @param reason The type of event that shall be counted
  * @param bandwidth The requested amount of bandwidth of this connection
  */
-void StatCounter::countProvisioning(const Provisioning::state_t state, bandwidth_t bandwidth) {
+void StatCounter::countProvisioning(const Provisioning&p) {
 	if(discard) {
 		--discard;
 		return;
 	}
-	if(state==Provisioning::SUCCESS) {
+	if(p.state==Provisioning::SUCCESS) {
 		++nProvisioned;
-		bwProvisioned+=bandwidth;
+		bwProvisioned+=p.bandwidth;
 	} else {
-		++nBlockings[state];
-		this->bwBlocked[state]+=bandwidth;
+		++nBlockings[p.state];
+		this->bwBlocked[p.state]+=p.bandwidth;
 	}
 }
 
-void StatCounter::countTermination(bandwidth_t bandwidth) {
+void StatCounter::countTermination(const Provisioning&p) {
 	if(!discard) {
 		++nTerminated;
-		bwTerminated+=bandwidth;
+		bwTerminated+=p.bandwidth;
 	}
 }
 
@@ -105,12 +105,12 @@ void StatCounter::countNetworkState(const NetworkState& s) {
 	unsigned long int anyUse=0;
 	numLinks=s.getNumLinks();
 	for(linkIndex_t i=0; i<numLinks; ++i) {
-		specIndex_t free=s.getFreeSpectrum(i);
-		anyUse+=free;
-		fragmentation+=FAC_FRAG-FAC_FRAG*s.getLargestSegment(i)/(NUM_SLOTS-free);
+		specIndex_t used=s.getUsedSpectrum(i);
+		anyUse+=used;
+		fragmentation+=FAC_FRAG-FAC_FRAG*s.getLargestSegment(i)/(NUM_SLOTS-used);
 	}
 	specUtil+=anyUse;
-	sharability+=FAC_SHAR*primary/(anyUse-primary);
+	sharability+=FAC_SHAR*s.getCurrentBkpBw()/(anyUse-primary);
 	++stateCounts;
 }
 
@@ -132,8 +132,6 @@ std::ostream& operator<<(std::ostream &o, const Provisioning::state_t &e) {
 
 /**
  * Output the statistics to a stream.
- * This writes all counters (and percentage values calculated from them) to a stream.
- * This can be used
  */
 std::ostream& operator<<(std::ostream &o, const StatCounter &s) {
 	unsigned long events_sum=s.nProvisioned;
@@ -142,43 +140,51 @@ std::ostream& operator<<(std::ostream &o, const StatCounter &s) {
 		events_sum+=s.nBlockings[e];
 		bandwidth_sum+=s.bwBlocked[e];
 	}
-	//Blocking probability
-	o<< (double)(events_sum-s.nProvisioned)/events_sum<<SEPARATOR_CHAR
-			//Bandwidth blocking probability
-			<< (double)(bandwidth_sum-s.bwProvisioned)/bandwidth_sum<<SEPARATOR_CHAR
-			//Sharability
-			<< (double) s.sharability/(FAC_SHAR*s.stateCounts)<<SEPARATOR_CHAR
-			//Fragmentation
-			<< (double) s.fragmentation/(FAC_FRAG*s.numLinks*s.stateCounts)<<SEPARATOR_CHAR
-			//Spectrum Utilization
-			<< (double) s.specUtil/(NUM_SLOTS*s.numLinks*s.stateCounts);
 
-	return o;
-}
-/*
-std::ostream& operator<<(std::ostream &o, const StatCounter &s) {
-	unsigned long events_sum=s.nProvisioned;
-	unsigned long bandwidth_sum=s.bwProvisioned;
-	for(int e=0; e<Provisioning::SUCCESS; ++e) {
-		events_sum+=s.nBlockings[e];
-		bandwidth_sum+=s.bwBlocked[e];
-	}
+	//When changing this, remember to change printTableHeader accordingly!
+	o		//Blocking probability
+			<< (double)(events_sum-s.nProvisioned)/events_sum<<TABLE_COL_SEPARATOR
+			//Bandwidth blocking probability
+			<< (double)(bandwidth_sum-s.bwProvisioned)/bandwidth_sum<<TABLE_COL_SEPARATOR
+			//Sharability
+			<< (double) s.sharability/(FAC_SHAR*s.stateCounts)<<TABLE_COL_SEPARATOR
+			//Fragmentation
+			<< (double) s.fragmentation/(FAC_FRAG*s.numLinks*s.stateCounts)<<TABLE_COL_SEPARATOR
+			//Spectrum Utilization
+			<< (double) s.specUtil/(NUM_SLOTS*s.numLinks*s.stateCounts)<<TABLE_COL_SEPARATOR
+			//Primary-to-total blocking reason ratio
+			<< (double)(s.nBlockings[Provisioning::BLOCK_PRI_NOPATH]+s.nBlockings[Provisioning::BLOCK_PRI_NOSPEC])
+				/(events_sum-s.nProvisioned);
+	/*
 	for(int e=0; e<Provisioning::SUCCESS; ++e)
-		o << static_cast<Provisioning::state_t>(e)
+		o <<'#'<<TABLE_COL_SEPARATOR<<'\t' << static_cast<Provisioning::state_t>(e)
 		  << boost::format(": %6lu conns (%6.3f%%); %8.1f Gbps (%6.3f%%)") %
 		     s.nBlockings[e] % (100.0*(double)s.nBlockings[e]/events_sum) %
 		     (s.bwBlocked[e]*SLOT_WIDTH) % (100.0*(double)s.bwBlocked[e]/bandwidth_sum)
 		  << std::endl;
-	o << "Provisioned successfully "
+	o <<'#'<<TABLE_COL_SEPARATOR<<'\t' << "Provisioned successfully "
 	  << boost::format(": %6lu conns (%6.3f%%); %8.1f Tbps (%6.3f%%)") %
 		 s.nProvisioned % (100.0*(double)s.nProvisioned/events_sum) %
 		 (s.bwProvisioned*SLOT_WIDTH*.001) % (100.0*(double)s.bwProvisioned/bandwidth_sum)
 	  << std::endl;
-	o << "Terminated               "
+	o <<'#'<<TABLE_COL_SEPARATOR<<'\t' << "Terminated               "
 	  << boost::format(": %6lu conns (%6.3f%%); %8.1f Tbps (%6.3f%%)") %
 		 s.nTerminated % (100.0*(double)s.nTerminated/events_sum) %
 		 (s.bwTerminated*SLOT_WIDTH*.001) % (100.0*(double)s.bwTerminated/bandwidth_sum)
 	  << std::endl;
+	  */
 	return o;
 }
-*/
+
+const char* const StatCounter::tableHeader=
+			"Blocking probability" TABLE_COL_SEPARATOR
+			"Bandwidth blocking probability" TABLE_COL_SEPARATOR
+			"Sharability" TABLE_COL_SEPARATOR
+			"Fragmentation" TABLE_COL_SEPARATOR
+			"Spectrum Utilization" TABLE_COL_SEPARATOR
+			"Primary as blocking reason"
+			;
+
+uint64_t StatCounter::getProvisioned() const {
+	return nProvisioned;
+}
