@@ -1,5 +1,5 @@
 /**
- * @file ArasFFProvisioning.cpp
+ * @file Tarhan2013PFMBLProvisioning.cpp
  *
  */
 
@@ -20,24 +20,20 @@
  * along with SPP EON Simulator.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ArasFFProvisioning.h"
+#include "Tarhan2013PFMBLProvisioning.h"
 
-#include <boost/graph/detail/compressed_sparse_row_struct.hpp>
-#include <vector>
-
-#include "../globaldef.h"
-#include "../modulation.h"
 #include "../SimulationMsgs.h"
 
-ArasFFProvisioning::ArasFFProvisioning(unsigned int k):
-k(k)
+Tarhan2013PFMBLProvisioning::Tarhan2013PFMBLProvisioning(unsigned int k, unsigned int c1):
+		k(k),
+		c1(c1)
 {
 }
 
-ArasFFProvisioning::~ArasFFProvisioning() {
+Tarhan2013PFMBLProvisioning::~Tarhan2013PFMBLProvisioning() {
 }
 
-Provisioning ArasFFProvisioning::operator ()(const NetworkGraph& g,
+Provisioning Tarhan2013PFMBLProvisioning::operator ()(const NetworkGraph& g,
 		const NetworkState& s, const NetworkGraph::DijkstraData &data, const Request& r) {
 	Provisioning result;
 	result.bandwidth=r.bandwidth;
@@ -56,7 +52,7 @@ Provisioning ArasFFProvisioning::operator ()(const NetworkGraph& g,
 			for(auto const &e:p) len+=data.weights[e.idx];
 
 			result.priMod=calcModulation(len);
-			if(result.priMod==MOD_NONE) { //path is too long - and thus all following nth-shortest paths as well.
+			if(result.priMod==MOD_NONE) {
 				result.state=Provisioning::BLOCK_PRI_NOPATH;
 				return result;
 			}
@@ -86,55 +82,56 @@ Provisioning ArasFFProvisioning::operator ()(const NetworkGraph& g,
 
 	y.reset();
 
-	{
-		for(auto const &e:result.priPath) data.weights[e.idx]=std::numeric_limits<distance_t>::max();
-		const std::vector<NetworkGraph::Path> &bkpPaths=y.getPaths(k);
-		for(auto const &e:result.priPath) data.weights[e.idx]=g.link_lengths[e.idx];
-		if(bkpPaths.empty()) {
-			result.state=Provisioning::BLOCK_SEC_NOPATH;
-			return result;
-		}
-		for(auto const &p:bkpPaths) {
-			distance_t len=0;
-			for(auto const &e:p) len+=data.weights[e.idx];
-
-			result.bkpMod=calcModulation(len);
-			if(result.bkpMod==MOD_NONE) { //path is too long - and thus all following nth-shortest paths as well.
-				result.state=Provisioning::BLOCK_SEC_NOPATH;
-				return result;
-			}
-			specIndex_t neededSpec=calcNumSlots(r.bandwidth,result.bkpMod);
-
-			const NetworkState::spectrum_bits spec=s.bkpAvailability(result.priPath,p);
-
-			specIndex_t count=0;
-			for(specIndex_t i=0; i<NUM_SLOTS; ++i) {
-				if(spec[i]) count=0;
-				else if(++count==neededSpec) {
-					result.bkpSpecBegin=i-count+1;
-					result.bkpSpecEnd=i+1;
-					break;
-				}
-			}
-			if(result.bkpSpecEnd) {
-				result.bkpPath=p;
-				break;
-			}
-		}
-	}
-	if(!result.bkpSpecEnd) {
-		result.state=Provisioning::BLOCK_SEC_NOSPEC;
+	unsigned int bestCost=std::numeric_limits<unsigned int>::max();
+	const NetworkGraph::Path *bestPath=0;
+	for(auto const &e:result.priPath) data.weights[e.idx]=std::numeric_limits<distance_t>::max();
+	const std::vector<NetworkGraph::Path> &bkpPaths=y.getPaths(k);
+	for(auto const &e:result.priPath) data.weights[e.idx]=g.link_lengths[e.idx];
+	if(bkpPaths.empty()) {
+		result.state=Provisioning::BLOCK_SEC_NOPATH;
 		return result;
 	}
+	for(auto const &p:bkpPaths) {
+		distance_t len=0;
+		for(auto const &e:p) len+=data.weights[e.idx];
 
-	result.state=Provisioning::SUCCESS;
+		modulation_t mod=calcModulation(len);
+		if(mod==MOD_NONE) break;
+		specIndex_t neededSpec=calcNumSlots(r.bandwidth,mod);
+
+		const NetworkState::spectrum_bits spec=s.bkpAvailability(result.priPath,p);
+
+		specIndex_t count=0;
+		for(specIndex_t i=NUM_SLOTS-1; ; --i) {
+			if(spec[i]) {
+				count=0;
+			} else if(++count>=neededSpec) {
+				unsigned int cost=c1?(NUM_SLOTS-i):(NUM_SLOTS-i)*c1+neededSpec*1000u;
+				if(cost<bestCost) {
+					bestCost=cost;
+					bestPath=&p;
+					result.bkpSpecBegin=i;
+					result.bkpSpecEnd=i+neededSpec;
+					result.bkpMod=mod;
+				}
+				break;
+			}
+			if(!i) break;
+		}
+	}
+	if(bestPath) {
+		result.bkpPath=*bestPath;
+		result.state=Provisioning::SUCCESS;
+	} else {
+		result.state=Provisioning::BLOCK_SEC_NOSPEC;
+	}
 	return result;
 }
 
-std::ostream& ArasFFProvisioning::print(std::ostream& o) const {
-	return o<<"FF("<<k<<')';
+std::ostream& Tarhan2013PFMBLProvisioning::print(std::ostream& o) const {
+	return o<<"PFMBL_"<<(c1?'1':'0')<<'('<<k<<", "<<c1*.001<<")";
 }
 
-ProvisioningScheme* ArasFFProvisioning::clone() {
-	return new ArasFFProvisioning(*this);
+ProvisioningScheme* Tarhan2013PFMBLProvisioning::clone() {
+	return new Tarhan2013PFMBLProvisioning(*this);
 }

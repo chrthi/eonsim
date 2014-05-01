@@ -1,5 +1,5 @@
 /**
- * @file ArasMFSBProvisioning.h
+ * @file Chen2013MFSBProvisioning.h
  *
  */
 
@@ -20,16 +20,16 @@
  * along with SPP EON Simulator.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ARASMFSBPROVISIONING_H_
-#define ARASMFSBPROVISIONING_H_
+#ifndef CHEN2013MFSBPROVISIONING_H_
+#define CHEN2013MFSBPROVISIONING_H_
 
 #include <iostream>
 #include "ProvisioningScheme.h"
 
-class ArasMFSBProvisioning: public ProvisioningScheme {
+class Chen2013MFSBProvisioning: public ProvisioningScheme {
 public:
-	ArasMFSBProvisioning(unsigned int k);
-	virtual ~ArasMFSBProvisioning();
+	Chen2013MFSBProvisioning(unsigned int k);
+	virtual ~Chen2013MFSBProvisioning();
 	virtual ProvisioningScheme *clone();
 	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const NetworkGraph::DijkstraData &data, const Request &r);
 protected:
@@ -38,4 +38,4 @@ private:
 	unsigned int k;
 };
 
-#endif /* ARASMFSBPROVISIONING_H_ */
+#endif /* CHEN2013MFSBPROVISIONING_H_ */

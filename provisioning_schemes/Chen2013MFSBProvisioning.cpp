@@ -1,5 +1,5 @@
 /**
- * @file ArasMFSBProvisioning.cpp
+ * @file Chen2013MFSBProvisioning.cpp
  *
  */
 
@@ -20,19 +20,19 @@
  * along with SPP EON Simulator.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ArasMFSBProvisioning.h"
+#include "Chen2013MFSBProvisioning.h"
 
 #include "../SimulationMsgs.h"
 
-ArasMFSBProvisioning::ArasMFSBProvisioning(unsigned int k):
+Chen2013MFSBProvisioning::Chen2013MFSBProvisioning(unsigned int k):
 		k(k)
 {
 }
 
-ArasMFSBProvisioning::~ArasMFSBProvisioning() {
+Chen2013MFSBProvisioning::~Chen2013MFSBProvisioning() {
 }
 
-Provisioning ArasMFSBProvisioning::operator ()(const NetworkGraph& g,
+Provisioning Chen2013MFSBProvisioning::operator ()(const NetworkGraph& g,
 		const NetworkState& s, const NetworkGraph::DijkstraData &data, const Request& r) {
 	Provisioning result;
 	result.bandwidth=r.bandwidth;
@@ -132,10 +132,10 @@ Provisioning ArasMFSBProvisioning::operator ()(const NetworkGraph& g,
 	return result;
 }
 
-std::ostream& ArasMFSBProvisioning::print(std::ostream& o) const {
+std::ostream& Chen2013MFSBProvisioning::print(std::ostream& o) const {
 	return o<<"MFSB("<<k<<')';
 }
 
-ProvisioningScheme* ArasMFSBProvisioning::clone() {
-	return new ArasMFSBProvisioning(*this);
+ProvisioningScheme* Chen2013MFSBProvisioning::clone() {
+	return new Chen2013MFSBProvisioning(*this);
 }

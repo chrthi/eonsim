@@ -38,9 +38,9 @@
 
 #include "globaldef.h"
 #include "NetworkGraph.h"
-#include "provisioning_schemes/ArasFFProvisioning.h"
-#include "provisioning_schemes/ArasMFSBProvisioning.h"
-#include "provisioning_schemes/ArasPFMBLProvisioning.h"
+#include "provisioning_schemes/Chao2012FFProvisioning.h"
+#include "provisioning_schemes/Chen2013MFSBProvisioning.h"
+#include "provisioning_schemes/Tarhan2013PFMBLProvisioning.h"
 #include "provisioning_schemes/ProvisioningScheme.h"
 #include "provisioning_schemes/ShortestFFLFProvisioning.h"
 #include "Simulation.h"
@@ -103,9 +103,9 @@ int main(int argc, char **argv) {
 	Simulation sim(g);
 #endif
 	ShortestFFLFProvisioning p_fflf;
-	ArasFFProvisioning p_ff(DEFAULT_K);
-	ArasMFSBProvisioning p_mfsb(DEFAULT_K);
-	ArasPFMBLProvisioning p_pfmbl0(DEFAULT_K,0), p_pfmbl1(DEFAULT_K,880);
+	Chao2012FFProvisioning p_ff(DEFAULT_K);
+	Chen2013MFSBProvisioning p_mfsb(DEFAULT_K);
+	Tarhan2013PFMBLProvisioning p_pfmbl0(DEFAULT_K,0), p_pfmbl1(DEFAULT_K,880);
 	ProvisioningScheme *ps[]={&p_fflf,&p_ff,&p_mfsb,&p_pfmbl0,&p_pfmbl1};
 	const size_t totalWp=(sizeof(ps)/sizeof(*ps))
 			*((DEFAULT_LOAD_MAX-DEFAULT_LOAD_MIN+DEFAULT_LOAD_STEP)/DEFAULT_LOAD_STEP);

@@ -1,5 +1,5 @@
 /**
- * @file ArasPFMBLProvisioning.h
+ * @file Chao2012FFProvisioning.h
  *
  */
 
@@ -20,23 +20,22 @@
  * along with SPP EON Simulator.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ARASPFMBLPROVISIONING_H_
-#define ARASPFMBLPROVISIONING_H_
+#ifndef CHAO2012FFPROVISIONING_H_
+#define CHAO2012FFPROVISIONING_H_
 
 #include <iostream>
 #include "ProvisioningScheme.h"
 
-class ArasPFMBLProvisioning: public ProvisioningScheme {
+class Chao2012FFProvisioning: public ProvisioningScheme {
 public:
-	ArasPFMBLProvisioning(unsigned int k, unsigned int c1);
-	virtual ~ArasPFMBLProvisioning();
+	Chao2012FFProvisioning(unsigned int k);
+	virtual ~Chao2012FFProvisioning();
 	virtual ProvisioningScheme *clone();
 	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const NetworkGraph::DijkstraData &data, const Request &r);
 protected:
 	virtual std::ostream& print(std::ostream &o) const;
 private:
 	unsigned int k;
-	unsigned int c1;
 };
 
-#endif /* ARASPFMBLPROVISIONING_H_ */
+#endif /* CHAO2012FFPROVISIONING_H_ */

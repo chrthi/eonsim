@@ -1,5 +1,5 @@
 /**
- * @file ArasFFProvisioning.h
+ * @file Tarhan2013PFMBLProvisioning.h
  *
  */
 
@@ -20,22 +20,23 @@
  * along with SPP EON Simulator.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ARASFFPROVISIONING_H_
-#define ARASFFPROVISIONING_H_
+#ifndef TARHAN2013PFMBLPROVISIONING_H_
+#define TARHAN2013PFMBLPROVISIONING_H_
 
 #include <iostream>
 #include "ProvisioningScheme.h"
 
-class ArasFFProvisioning: public ProvisioningScheme {
+class Tarhan2013PFMBLProvisioning: public ProvisioningScheme {
 public:
-	ArasFFProvisioning(unsigned int k);
-	virtual ~ArasFFProvisioning();
+	Tarhan2013PFMBLProvisioning(unsigned int k, unsigned int c1);
+	virtual ~Tarhan2013PFMBLProvisioning();
 	virtual ProvisioningScheme *clone();
 	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const NetworkGraph::DijkstraData &data, const Request &r);
 protected:
 	virtual std::ostream& print(std::ostream &o) const;
 private:
 	unsigned int k;
+	unsigned int c1;
 };
 
-#endif /* ARASFFPROVISIONING_H_ */
+#endif /* TARHAN2013PFMBLPROVISIONING_H_ */
