@@ -107,7 +107,9 @@ const StatCounter Simulation::run(ProvisioningScheme &provision,
 
 			count.countNetworkState(state);
 
+#ifdef DEBUG
 			if(count.getProvisioned()%100==1) state.sanityCheck(activeConnections);
+#endif
 		}
 
 		//decide the time for the next request

@@ -129,7 +129,7 @@ Provisioning ArasPFMBLProvisioning::operator ()(const NetworkGraph& g,
 }
 
 std::ostream& ArasPFMBLProvisioning::print(std::ostream& o) const {
-	return o<<"PFMBL_"<<(c1?'1':'0')<<','<<k<<','<<c1;
+	return o<<"PFMBL_"<<(c1?'1':'0')<<'('<<k<<", "<<c1*.001<<")";
 }
 
 ProvisioningScheme* ArasPFMBLProvisioning::clone() {

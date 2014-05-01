@@ -45,7 +45,7 @@
 
 #define DEFAULT_GUARDBAND 1
 
-#define TABLE_COL_SEPARATOR ","
+#define TABLE_COL_SEPARATOR ";"
 
 typedef unsigned short specIndex_t;
 typedef unsigned short bandwidth_t;

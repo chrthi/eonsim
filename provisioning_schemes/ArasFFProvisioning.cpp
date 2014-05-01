@@ -132,7 +132,7 @@ Provisioning ArasFFProvisioning::operator ()(const NetworkGraph& g,
 }
 
 std::ostream& ArasFFProvisioning::print(std::ostream& o) const {
-	return o<<"FF,"<<k;
+	return o<<"FF("<<k<<')';
 }
 
 ProvisioningScheme* ArasFFProvisioning::clone() {

@@ -133,7 +133,7 @@ Provisioning ArasMFSBProvisioning::operator ()(const NetworkGraph& g,
 }
 
 std::ostream& ArasMFSBProvisioning::print(std::ostream& o) const {
-	return o<<"MFSB,"<<k;
+	return o<<"MFSB("<<k<<')';
 }
 
 ProvisioningScheme* ArasMFSBProvisioning::clone() {

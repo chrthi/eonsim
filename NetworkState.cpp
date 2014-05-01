@@ -30,7 +30,8 @@
 #include "NetworkGraph.h"
 #include "Simulation.h"
 
-#define DEBUG
+//use this when testing new provisioning methods to check if they generate illegal provisionings
+//#define DEBUG
 
 NetworkState::NetworkState(const NetworkGraph& topology) :
 numLinks(boost::num_edges(topology.g)),
@@ -62,12 +63,6 @@ void NetworkState::provision(const Provisioning &p) {
 	for(edgeIt it=p.bkpPath.begin(); it!=p.bkpPath.end(); ++it)
 		for(specIndex_t i=p.bkpSpecBegin;i<p.bkpSpecEnd;++i)
 			anyUse[it->idx][i]=true;
-/*	if(...) {
-		std::cerr<<p.priPath<<"; "<<p.bkpPath<<'\n'
-				<<bkpAvailability(p.priPath,p.bkpPath).to_string('_','X')<<'\n';
-		std::cerr.flush();
-	}
-*/
 	for(edgeIt itb=p.bkpPath.begin(); itb!=p.bkpPath.end(); ++itb)
 		for(edgeIt itp=p.priPath.begin(); itp!=p.priPath.end(); ++itp) {
 #ifdef DEBUG

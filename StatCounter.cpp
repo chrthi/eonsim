@@ -177,12 +177,12 @@ std::ostream& operator<<(std::ostream &o, const StatCounter &s) {
 }
 
 const char* const StatCounter::tableHeader=
-			"Blocking probability" TABLE_COL_SEPARATOR
-			"Bandwidth blocking probability" TABLE_COL_SEPARATOR
-			"Sharability" TABLE_COL_SEPARATOR
-			"Fragmentation" TABLE_COL_SEPARATOR
-			"Spectrum Utilization" TABLE_COL_SEPARATOR
-			"Primary as blocking reason"
+			"\"Blocking probability\"" TABLE_COL_SEPARATOR
+			"\"Bandwidth blocking probability\"" TABLE_COL_SEPARATOR
+			"\"Sharability\"" TABLE_COL_SEPARATOR
+			"\"Fragmentation\"" TABLE_COL_SEPARATOR
+			"\"Spectrum Utilization\"" TABLE_COL_SEPARATOR
+			"\"Primary as blocking reason\""
 			;
 
 uint64_t StatCounter::getProvisioned() const {

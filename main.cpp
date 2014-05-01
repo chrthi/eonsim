@@ -84,9 +84,6 @@ static void worker(const NetworkGraph &g) {
 }
 #endif
 
-#undef DEFAULT_LOAD_STEP
-#define DEFAULT_LOAD_STEP 20
-
 int main(int argc, char **argv) {
 	std::ifstream in("input/input_att_d.txt");
 	NetworkGraph g=NetworkGraph::loadFromMatrix(in);
@@ -118,10 +115,8 @@ int main(int argc, char **argv) {
 	nextWork.load=DEFAULT_LOAD_MIN-DEFAULT_LOAD_STEP;
 	size_t resultIdx=0;
 	nextWork.index=-1;
-	std::cout<<'#'<<TABLE_COL_SEPARATOR
-			<<"Load"<<TABLE_COL_SEPARATOR
-			<<StatCounter::tableHeader<<TABLE_COL_SEPARATOR
-			<<"Algorithm" TABLE_COL_SEPARATOR "Params"
+	std::cout<<"\"Algorithm\"" TABLE_COL_SEPARATOR "\"Load\""<<TABLE_COL_SEPARATOR
+			<<StatCounter::tableHeader
 			<<std::endl;
 	while(p || resultIdx<=nextWork.index) {
 #ifndef NOTHREAD
@@ -164,13 +159,13 @@ int main(int argc, char **argv) {
 					const unsigned int &load=it->second.first.load;
 					const StatCounter &stat=it->second.second;
 #endif
-					std::cout<<'T'<<TABLE_COL_SEPARATOR
+					std::cout
+							//provisioning scheme and its parameters
+							<<'"'<<prov<<'"'<<TABLE_COL_SEPARATOR
 							//Load value
 							<<load<<TABLE_COL_SEPARATOR
 							//Statistics
-							<<stat<<TABLE_COL_SEPARATOR
-							//provisioning scheme and its parameters
-							<<prov
+							<<stat
 							<<std::endl;
 #ifndef NOTHREAD
 					printStat=true;

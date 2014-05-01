@@ -43,7 +43,7 @@ Provisioning KsqHybridCostProvisioning::operator ()(
 }
 
 std::ostream& KsqHybridCostProvisioning::print(std::ostream& o) const {
-	return o<<"PFMBL,"<<k_pri<<','<<k_bkp;
+	return o<<"K-SQ("<<k_pri<<", "<<k_bkp<<')';
 }
 
 ProvisioningScheme* KsqHybridCostProvisioning::clone() {
