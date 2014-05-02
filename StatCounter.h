@@ -37,7 +37,7 @@ public:
 	void reset(const uint64_t discard);
 	void countProvisioning(const Provisioning&p);
 	void countTermination(const Provisioning&p);
-	void countNetworkState(const NetworkState &s);
+	void countNetworkState(const NetworkState &s, uint64_t timestamp);
 	friend std::ostream& operator<<(std::ostream &o, const StatCounter &s);
 	static const char* const tableHeader;
 	uint64_t getProvisioned() const;
@@ -62,11 +62,11 @@ private:
 	uint64_t bwProvisioned; ///< Total bandwidth of connections that were successfully provisioned.
 	uint64_t bwTerminated; ///< Total bandwidth of connections that were terminated.
 
-	uint64_t sharability;
-	uint64_t fragmentation;
+	double sharability;
+	double fragmentation;
 	uint64_t specUtil;
 	linkIndex_t numLinks;
-	uint64_t stateCounts;
+	uint64_t simTime;
 };
 
 #endif /* STATCOUNTER_H_ */

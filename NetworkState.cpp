@@ -147,6 +147,7 @@ void NetworkState::reset() {
 	for(size_t i=0; i<numLinks; ++i) primaryUse[i].reset();
 	for(size_t i=0; i<numLinks; ++i) anyUse[i].reset();
 	for(size_t i=0; i<static_cast<size_t>(numLinks*numLinks); ++i) sharing[i].reset();
+	currentBkpBw=0;
 }
 
 specIndex_t NetworkState::countFreeBlocks(const NetworkGraph::Path& bkpPath,

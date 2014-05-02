@@ -58,14 +58,18 @@ const StatCounter Simulation::run(ProvisioningScheme &provision,
 	unsigned long currentTime=0;
 	reset();
 	StatCounter count(itersDiscard);
-	for(unsigned long i=0; i<itersTotal; ++i) {
+	for(unsigned long numProvisionings=0; numProvisionings<itersTotal; ++numProvisionings) {
 		//terminate all connections that should have terminated by now
 		for(std::map<unsigned long, Provisioning>::iterator nextTerm=activeConnections.begin();
 				nextTerm!=activeConnections.end() && nextTerm->first<=nextRequestTime;
 				nextTerm=activeConnections.begin()) {
 			//a termination event is next.
-			//update simulation time
-			currentTime=nextTerm->first;
+
+			//advance simulation time to the next instant
+			if(nextTerm->first!=currentTime) {
+				currentTime=nextTerm->first;
+				count.countNetworkState(state,currentTime);
+			}
 
 			//update the network state with the removed connection
 			state.terminate(nextTerm->second);
@@ -75,11 +79,13 @@ const StatCounter Simulation::run(ProvisioningScheme &provision,
 			//remove the connection from the list
 			activeConnections.erase(nextTerm);
 
-			count.countNetworkState(state);
 		}
 
-		//update simulation time
-		currentTime=nextRequestTime;
+		//advance simulation time to the next instant
+		if(nextRequestTime!=currentTime) {
+			currentTime=nextRequestTime;
+			count.countNetworkState(state,currentTime);
+		}
 
 		//a request event is next.
 
@@ -104,8 +110,6 @@ const StatCounter Simulation::run(ProvisioningScheme &provision,
 			//Add the connection to the active connection list with an expiry time
 			activeConnections.insert(std::pair<const unsigned long, Provisioning>(
 					currentTime+lrint(holdingTimeGen(rng)),p));
-
-			count.countNetworkState(state);
 
 #ifdef DEBUG
 			if(count.getProvisioned()%100==1) state.sanityCheck(activeConnections);

@@ -40,7 +40,7 @@ StatCounter::StatCounter(const uint64_t discard) :
 	fragmentation(),
 	specUtil(),
 	numLinks(),
-	stateCounts()
+	simTime()
 {}
 
 StatCounter::~StatCounter() {
@@ -54,16 +54,16 @@ StatCounter::~StatCounter() {
  */
 void StatCounter::reset(const uint64_t discard) {
 	this->discard=discard;
-	std::fill(nBlockings,nBlockings+Provisioning::SUCCESS+1,0UL);
+	std::fill(nBlockings,nBlockings+Provisioning::SUCCESS+1,0ul);
 	nProvisioned=0;
 	nTerminated=0;
-	std::fill(bwBlocked,bwBlocked+Provisioning::SUCCESS+1,0.0);
+	std::fill(bwBlocked,bwBlocked+Provisioning::SUCCESS+1,0ul);
 	bwProvisioned=0;
 	bwTerminated=0;
-	sharability=0;
-	fragmentation=0;
+	sharability=0.0;
+	fragmentation=0.0;
 	specUtil=0;
-	stateCounts=0;
+	simTime=0;
 }
 
 /**
@@ -95,23 +95,22 @@ void StatCounter::countTermination(const Provisioning&p) {
 	}
 }
 
-//max. 10^11 seems to be safe for 64-bit ints
-#define FAC_SHAR 1000000000ul
-#define FAC_FRAG 1000000000ul
-
-void StatCounter::countNetworkState(const NetworkState& s) {
+void StatCounter::countNetworkState(const NetworkState& s, uint64_t timestamp) {
 	if(discard) return;
 	unsigned long int primary=s.getTotalPri();
 	unsigned long int anyUse=0;
 	numLinks=s.getNumLinks();
+	double currentFrag=0.0;
 	for(linkIndex_t i=0; i<numLinks; ++i) {
 		specIndex_t used=s.getUsedSpectrum(i);
 		anyUse+=used;
-		fragmentation+=FAC_FRAG-FAC_FRAG*s.getLargestSegment(i)/(NUM_SLOTS-used);
+		currentFrag+=1.0-(double)s.getLargestSegment(i)/(NUM_SLOTS-used);
 	}
-	specUtil+=anyUse;
-	sharability+=FAC_SHAR*s.getCurrentBkpBw()/(anyUse-primary);
-	++stateCounts;
+	uint64_t deltaT=timestamp-simTime;
+	fragmentation+=deltaT*currentFrag;
+	specUtil+=deltaT*anyUse;
+	sharability+=deltaT*(double)s.getCurrentBkpBw()/(anyUse-primary);
+	simTime=timestamp;
 }
 
 /**
@@ -147,11 +146,11 @@ std::ostream& operator<<(std::ostream &o, const StatCounter &s) {
 			//Bandwidth blocking probability
 			<< (double)(bandwidth_sum-s.bwProvisioned)/bandwidth_sum<<TABLE_COL_SEPARATOR
 			//Sharability
-			<< (double) s.sharability/(FAC_SHAR*s.stateCounts)<<TABLE_COL_SEPARATOR
+			<< s.sharability / (s.simTime)<<TABLE_COL_SEPARATOR
 			//Fragmentation
-			<< (double) s.fragmentation/(FAC_FRAG*s.numLinks*s.stateCounts)<<TABLE_COL_SEPARATOR
+			<< s.fragmentation/(s.simTime*s.numLinks)<<TABLE_COL_SEPARATOR
 			//Spectrum Utilization
-			<< (double) s.specUtil/(NUM_SLOTS*s.numLinks*s.stateCounts)<<TABLE_COL_SEPARATOR
+			<< (double) s.specUtil/(NUM_SLOTS*s.simTime*s.numLinks)<<TABLE_COL_SEPARATOR
 			//Primary-to-total blocking reason ratio
 			<< (double)(s.nBlockings[Provisioning::BLOCK_PRI_NOPATH]+s.nBlockings[Provisioning::BLOCK_PRI_NOSPEC])
 				/(events_sum-s.nProvisioned);
