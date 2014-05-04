@@ -67,12 +67,11 @@ void StatCounter::reset(const uint64_t discard) {
 }
 
 /**
- * Count a provisioning/blocking/termination event.
+ * Count a provisioning/blocking event.
  * This method is called to inform the counter object that a
- * connection has been blocked for some reason, provisioned or terminated.
+ * connection has been provisioned or blocked for some reason.
  *
- * @param reason The type of event that shall be counted
- * @param bandwidth The requested amount of bandwidth of this connection
+ * @param p The object describing the connection that shall be counted
  */
 void StatCounter::countProvisioning(const Provisioning&p) {
 	if(discard) {
@@ -84,10 +83,17 @@ void StatCounter::countProvisioning(const Provisioning&p) {
 		bwProvisioned+=p.bandwidth;
 	} else {
 		++nBlockings[p.state];
-		this->bwBlocked[p.state]+=p.bandwidth;
+		bwBlocked[p.state]+=p.bandwidth;
 	}
 }
 
+/**
+ * Count a termination event.
+ * This method is called to inform the counter object that a
+ * connection has been terminated.
+ *
+ * @param p The object describing the connection that shall be counted
+ */
 void StatCounter::countTermination(const Provisioning&p) {
 	if(!discard) {
 		++nTerminated;
@@ -104,12 +110,14 @@ void StatCounter::countNetworkState(const NetworkState& s, uint64_t timestamp) {
 	for(linkIndex_t i=0; i<numLinks; ++i) {
 		specIndex_t used=s.getUsedSpectrum(i);
 		anyUse+=used;
-		currentFrag+=1.0-(double)s.getLargestSegment(i)/(NUM_SLOTS-used);
+		if(NUM_SLOTS-used>0)
+			currentFrag+=1.0-(double)s.getLargestSegment(i)/(NUM_SLOTS-used);
 	}
 	uint64_t deltaT=timestamp-simTime;
 	fragmentation+=deltaT*currentFrag;
 	specUtil+=deltaT*anyUse;
-	sharability+=deltaT*(double)s.getCurrentBkpBw()/(anyUse-primary);
+	if(anyUse-primary>0)
+		sharability+=deltaT*(double)s.getCurrentBkpBw()/(anyUse-primary);
 	simTime=timestamp;
 }
 
