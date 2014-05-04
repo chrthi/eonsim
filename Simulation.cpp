@@ -52,8 +52,7 @@ const StatCounter Simulation::run(ProvisioningScheme &provision,
 	boost::random::uniform_int_distribution<size_t> sourceGen(0,num_vertices(topology.g)-1);
 	boost::random::uniform_int_distribution<size_t> destGen(0,num_vertices(topology.g)-2);
 	boost::random::uniform_int_distribution<unsigned int>bandwidthGen(
-			ceil(DEFAULT_BW_MIN/SLOT_WIDTH),
-			ceil(DEFAULT_BW_MAX/SLOT_WIDTH));
+			DEFAULT_BW_MIN,	DEFAULT_BW_MAX);
 	unsigned long nextRequestTime=0;
 	unsigned long currentTime=0;
 	reset();
@@ -96,7 +95,7 @@ const StatCounter Simulation::run(ProvisioningScheme &provision,
 		nodeIndex_t destIndex=destGen(rng);
 		if(destIndex>=sourceIndex) ++destIndex;
 		r.dest=vertex(destIndex,topology.g);
-		r.bandwidth=bandwidthGen(rng);
+		r.bandwidth=ceil((double)bandwidthGen(rng)/SLOT_WIDTH);
 
 		//Run the provisioning algorithm
 		Provisioning p=provision(topology,state,scratchpad,r);
