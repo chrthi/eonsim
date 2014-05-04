@@ -53,6 +53,15 @@ NetworkGraph NetworkGraph::loadFromMatrix(std::istream &s) {
 	s>>n;
 	while(isspace(s.peek())) s.ignore(); // skip the (cr)lf after the node count
 	std::vector<std::pair<nodeIndex_t, nodeIndex_t> > edges;
+	if(s.peek()>='1' && s.peek()<='9') {
+		linkIndex_t l;
+		s>>l;
+		while(isspace(s.peek())) s.ignore(); // skip the (cr)lf after the link count
+		edges.reserve(l*2);
+		for(int i=0; i<n; ++i)
+			s.ignore(std::numeric_limits<std::streamsize>::max(),'\n');
+		while(isspace(s.peek())) s.ignore(); // skip the (cr)lf after the last discarded line
+	}
 	std::vector<distance_t> dists;
 	for(nodeIndex_t i=0; i<n; ++i) {
 		for(nodeIndex_t k=0; k<n; ++k) {
@@ -68,6 +77,7 @@ NetworkGraph NetworkGraph::loadFromMatrix(std::istream &s) {
 }
 
 void NetworkGraph::printAsDot(std::ostream& s) const {
+	s<<'#'<<num_vertices(g)<<" Nodes, "<<num_edges(g)<<" Links\n";
 	s<<"digraph {\ngraph[overlap=scale, normalize=90];\n";
 	auto es = boost::edges(g);
 	for (auto eit = es.first; eit != es.second; ++eit) {
