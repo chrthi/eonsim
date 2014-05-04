@@ -106,7 +106,7 @@ Provisioning Tarhan2013PFMBLProvisioning::operator ()(const NetworkGraph& g,
 			if(spec[i]) {
 				count=0;
 			} else if(++count>=neededSpec) {
-				unsigned int cost=c1?(NUM_SLOTS-i):(NUM_SLOTS-i)*c1+neededSpec*1000u;
+				unsigned int cost=c1?(NUM_SLOTS-i)*c1+neededSpec*1000u:(NUM_SLOTS-i);
 				if(cost<bestCost) {
 					bestCost=cost;
 					bestPath=&p;
@@ -129,7 +129,10 @@ Provisioning Tarhan2013PFMBLProvisioning::operator ()(const NetworkGraph& g,
 }
 
 std::ostream& Tarhan2013PFMBLProvisioning::print(std::ostream& o) const {
-	return o<<"PFMBL_"<<(c1?'1':'0')<<'('<<k<<", "<<c1*.001<<")";
+	if(c1)
+		return o<<"PF-MBL_1"<<'('<<k<<", "<<c1*.001<<')';
+	else
+		return o<<"PF-MBL_0"<<'('<<k<<')';
 }
 
 ProvisioningScheme* Tarhan2013PFMBLProvisioning::clone() {

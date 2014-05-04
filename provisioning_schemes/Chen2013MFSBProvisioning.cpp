@@ -110,15 +110,12 @@ Provisioning Chen2013MFSBProvisioning::operator ()(const NetworkGraph& g,
 				fsb+=s.countFreeBlocks(p,i);
 				++count;
 				if(count> neededSpec) fsb-=s.countFreeBlocks(p,i-neededSpec);
-				if(count>=neededSpec) {
-					if(fsb<bestFSB) {
-						bestFSB=fsb;
-						bestPath=&p;
-						result.bkpSpecBegin=i-neededSpec+1;
-						result.bkpSpecEnd=i+1;
-						result.bkpMod=mod;
-					}
-					break;
+				if(count>=neededSpec && fsb<bestFSB) {
+					bestFSB=fsb;
+					bestPath=&p;
+					result.bkpSpecBegin=i-neededSpec+1;
+					result.bkpSpecEnd=i+1;
+					result.bkpMod=mod;
 				}
 			}
 		}
