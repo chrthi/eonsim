@@ -214,3 +214,43 @@ specIndex_t NetworkState::getLargestSegment(linkIndex_t l) const {
 	}
 	return result;
 }
+
+unsigned int NetworkState::calcCuts(const NetworkGraph& g,
+		const NetworkGraph::Path& p,
+		const specIndex_t begin, const specIndex_t end) const {
+	if(begin==0 || end==NUM_SLOTS) return 0;
+	unsigned int result=0;
+	for(auto const &e:p)
+		if(!anyUse[e.idx][begin-1] && !anyUse[e.idx][end])
+			++result;
+	return result;
+}
+
+double NetworkState::calcMisalignments(const NetworkGraph& g,
+		const NetworkGraph::Path& p,
+		const specIndex_t begin, const specIndex_t end) const {
+	double result=0.0;
+	typedef boost::graph_traits <NetworkGraph::Graph>::out_edge_iterator out_edge_iterator;
+	for(auto const &e:p) {
+		std::pair<out_edge_iterator, out_edge_iterator> outEdges =
+				boost::out_edges(e.src, g.g);
+		unsigned int numFreeSlots=0, numAdjLinks=boost::out_degree(e.src,g.g);
+		for(; outEdges.first != outEdges.second; ++outEdges.first)
+			if(outEdges.first.dereference().idx!=e.idx)
+				for(specIndex_t i=begin; i<end; ++i)
+					if(!anyUse[outEdges.first.dereference().idx][i])
+						++numFreeSlots;
+		result+=(double)numFreeSlots/(double)numAdjLinks;
+	}
+
+	return result;
+}
+
+unsigned int NetworkState::countFreeBlocks(const NetworkGraph::Path& p,
+		const specIndex_t begin, const specIndex_t end) const {
+	unsigned int result=0;
+	for(auto const &e:p)
+		for(specIndex_t i=begin; i<end; ++i)
+			if(!anyUse[e.idx][i]) ++result;
+	return result;
+}

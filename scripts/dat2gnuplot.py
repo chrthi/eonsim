@@ -24,7 +24,6 @@ for row in eondata:
         tables[vidx][a].append((l,val))
 
 #output
-print 'set term wxt size 1620,950 enhanced persist'
 print 'set key inside left top vertical Left reverse'
 print 'set style data lp'
 print 'set multiplot layout 2,3'

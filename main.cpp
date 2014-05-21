@@ -41,6 +41,7 @@
 #include "provisioning_schemes/Chao2012FFProvisioning.h"
 #include "provisioning_schemes/Chen2013MFSBProvisioning.h"
 #include "provisioning_schemes/Tarhan2013PFMBLProvisioning.h"
+#include "provisioning_schemes/KsqHybridCostProvisioning.h"
 #include "provisioning_schemes/ProvisioningScheme.h"
 #include "provisioning_schemes/ShortestFFLFProvisioning.h"
 #include "Simulation.h"
@@ -103,10 +104,12 @@ int main(int argc, char **argv) {
 	Simulation sim(g);
 #endif
 	//ShortestFFLFProvisioning p_fflf;
-	Chao2012FFProvisioning p_ff(DEFAULT_K);
-	Chen2013MFSBProvisioning p_mfsb(DEFAULT_K);
-	Tarhan2013PFMBLProvisioning p_pfmbl0(DEFAULT_K,0), p_pfmbl1(DEFAULT_K,880);
-	ProvisioningScheme *ps[]={&p_pfmbl1,&p_pfmbl0,&p_mfsb,&p_ff};
+	//Chao2012FFProvisioning p_ff(DEFAULT_K);
+	//Chen2013MFSBProvisioning p_mfsb(DEFAULT_K);
+	//Tarhan2013PFMBLProvisioning p_pfmbl0(DEFAULT_K,0), p_pfmbl1(DEFAULT_K,880);
+	KsqHybridCostProvisioning p_ksq(1.0,1.0,1.0);
+	//ProvisioningScheme *ps[]={&p_pfmbl1,&p_pfmbl0,&p_mfsb,&p_ff};
+	ProvisioningScheme *ps[]={&p_ksq};
 	const size_t totalWp=(sizeof(ps)/sizeof(*ps))
 			*((DEFAULT_LOAD_MAX-DEFAULT_LOAD_MIN+DEFAULT_LOAD_STEP)/DEFAULT_LOAD_STEP);
 

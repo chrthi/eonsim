@@ -28,7 +28,7 @@
 
 class KsqHybridCostProvisioning: public ProvisioningScheme {
 public:
-	KsqHybridCostProvisioning(unsigned int k_pri, unsigned int k_bkp);
+	KsqHybridCostProvisioning(double c_cut,double c_algn,double c_sep);
 	virtual ~KsqHybridCostProvisioning();
 	virtual ProvisioningScheme *clone();
 	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const NetworkGraph::DijkstraData &data, const Request &r);
@@ -37,9 +37,11 @@ protected:
 private:
 	unsigned int k_pri; ///< Number of paths to consider for the primary
 	unsigned int k_bkp; ///< Number of paths to consider for backup, per primary
-	double cost(const NetworkGraph &g, const NetworkState &s,
-			const NetworkGraph::Path &pp, specIndex_t beginp, specIndex_t endp,
+	double costp(const NetworkGraph &g, const NetworkState &s,
+			const NetworkGraph::Path &pp, specIndex_t beginp, specIndex_t endp) const;
+	double costb(const NetworkGraph &g, const NetworkState &s,
 			const NetworkGraph::Path &pb, specIndex_t beginb, specIndex_t endb) const;
+	double c_cut, c_algn, c_sep;
 };
 
 #endif /* KSQHYBRIDCOSTPROVISIONING_H_ */

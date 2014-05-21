@@ -58,6 +58,13 @@ public:
 
 	uint64_t getCurrentBkpBw() const;
 
+	unsigned int calcCuts(const NetworkGraph& g, const NetworkGraph::Path &p,
+			const specIndex_t begin, const specIndex_t end) const;
+	double calcMisalignments(const NetworkGraph& g, const NetworkGraph::Path &p,
+			const specIndex_t begin, const specIndex_t end) const;
+	unsigned int countFreeBlocks(const NetworkGraph::Path &p,
+			const specIndex_t begin, const specIndex_t end) const;
+
 private:
 	NetworkState(const NetworkState &n);
 	linkIndex_t numLinks;
