@@ -28,14 +28,14 @@
 
 class Tarhan2013PFMBLProvisioning: public ProvisioningScheme {
 public:
-	Tarhan2013PFMBLProvisioning(unsigned int k, unsigned int c1);
+	Tarhan2013PFMBLProvisioning(const ParameterSet &p);
 	virtual ~Tarhan2013PFMBLProvisioning();
 	virtual ProvisioningScheme *clone();
 	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const NetworkGraph::DijkstraData &data, const Request &r);
 protected:
 	virtual std::ostream& print(std::ostream &o) const;
 private:
-	unsigned int k;
+	unsigned int k_pri, k_bkp;
 	unsigned int c1;
 };
 

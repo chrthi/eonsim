@@ -31,6 +31,7 @@
 
 class ProvisioningScheme {
 public:
+	typedef std::map<std::string,double> ParameterSet;
 	virtual ~ProvisioningScheme();
 	virtual ProvisioningScheme *clone() =0;
 	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const NetworkGraph::DijkstraData &data, const Request &r) =0;

@@ -29,9 +29,19 @@
 #include "../modulation.h"
 #include "../SimulationMsgs.h"
 
-Chao2012FFProvisioning::Chao2012FFProvisioning(unsigned int k):
-k(k)
+Chao2012FFProvisioning::Chao2012FFProvisioning(const ProvisioningScheme::ParameterSet &p):
+	k_pri(DEFAULT_K),
+	k_bkp(DEFAULT_K)
 {
+	auto it=p.find("k");
+	if(it!=p.end())
+		k_pri=k_bkp=lrint(it->second);
+	it=p.find("k_pri");
+	if(it!=p.end())
+		k_pri=lrint(it->second);
+	it=p.find("k_bkp");
+	if(it!=p.end())
+		k_bkp=lrint(it->second);
 }
 
 Chao2012FFProvisioning::~Chao2012FFProvisioning() {
@@ -46,7 +56,7 @@ Provisioning Chao2012FFProvisioning::operator ()(const NetworkGraph& g,
 
 	NetworkGraph::YenKShortestSearch y(g,r.source,r.dest,data);
 	{
-		const std::vector<NetworkGraph::Path> &priPaths=y.getPaths(k);
+		const std::vector<NetworkGraph::Path> &priPaths=y.getPaths(k_pri);
 		if(priPaths.empty()) {
 			result.state=Provisioning::BLOCK_PRI_NOPATH;
 			return result;
@@ -88,7 +98,7 @@ Provisioning Chao2012FFProvisioning::operator ()(const NetworkGraph& g,
 
 	{
 		for(auto const &e:result.priPath) data.weights[e.idx]=std::numeric_limits<distance_t>::max();
-		const std::vector<NetworkGraph::Path> &bkpPaths=y.getPaths(k);
+		const std::vector<NetworkGraph::Path> &bkpPaths=y.getPaths(k_bkp);
 		for(auto const &e:result.priPath) data.weights[e.idx]=g.link_lengths[e.idx];
 		if(bkpPaths.empty()) {
 			result.state=Provisioning::BLOCK_SEC_NOPATH;
@@ -132,7 +142,7 @@ Provisioning Chao2012FFProvisioning::operator ()(const NetworkGraph& g,
 }
 
 std::ostream& Chao2012FFProvisioning::print(std::ostream& o) const {
-	return o<<"FF("<<k<<')';
+	return o<<"FF("<<k_pri<<','<<k_bkp<<')';
 }
 
 ProvisioningScheme* Chao2012FFProvisioning::clone() {

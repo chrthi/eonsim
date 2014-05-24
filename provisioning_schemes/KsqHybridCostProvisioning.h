@@ -28,7 +28,7 @@
 
 class KsqHybridCostProvisioning: public ProvisioningScheme {
 public:
-	KsqHybridCostProvisioning(double c_cut,double c_algn,double c_sep);
+	KsqHybridCostProvisioning(const ParameterSet &p);
 	virtual ~KsqHybridCostProvisioning();
 	virtual ProvisioningScheme *clone();
 	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const NetworkGraph::DijkstraData &data, const Request &r);

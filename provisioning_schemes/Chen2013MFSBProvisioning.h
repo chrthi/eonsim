@@ -28,14 +28,14 @@
 
 class Chen2013MFSBProvisioning: public ProvisioningScheme {
 public:
-	Chen2013MFSBProvisioning(unsigned int k);
+	Chen2013MFSBProvisioning(const ParameterSet &p);
 	virtual ~Chen2013MFSBProvisioning();
 	virtual ProvisioningScheme *clone();
 	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const NetworkGraph::DijkstraData &data, const Request &r);
 protected:
 	virtual std::ostream& print(std::ostream &o) const;
 private:
-	unsigned int k;
+	unsigned int k_pri, k_bkp;
 };
 
 #endif /* CHEN2013MFSBPROVISIONING_H_ */

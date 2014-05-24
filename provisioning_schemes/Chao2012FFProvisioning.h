@@ -28,14 +28,14 @@
 
 class Chao2012FFProvisioning: public ProvisioningScheme {
 public:
-	Chao2012FFProvisioning(unsigned int k);
+	Chao2012FFProvisioning(const ParameterSet &p);
 	virtual ~Chao2012FFProvisioning();
 	virtual ProvisioningScheme *clone();
 	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const NetworkGraph::DijkstraData &data, const Request &r);
 protected:
 	virtual std::ostream& print(std::ostream &o) const;
 private:
-	unsigned int k;
+	unsigned int k_pri, k_bkp;
 };
 
 #endif /* CHAO2012FFPROVISIONING_H_ */

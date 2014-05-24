@@ -40,7 +40,7 @@
 
 using namespace boost;
 
-ShortestFFLFProvisioning::ShortestFFLFProvisioning() {
+ShortestFFLFProvisioning::ShortestFFLFProvisioning(const ProvisioningScheme::ParameterSet &p) {
 }
 
 ShortestFFLFProvisioning::~ShortestFFLFProvisioning() {

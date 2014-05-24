@@ -23,14 +23,31 @@
 #include "KsqHybridCostProvisioning.h"
 
 KsqHybridCostProvisioning::KsqHybridCostProvisioning(
-		double c_cut,double c_algn,double c_sep
+		const ProvisioningScheme::ParameterSet &p
 ):
 		k_pri(DEFAULT_K),
 		k_bkp(DEFAULT_K),
-		c_cut(c_cut),
-		c_algn(c_algn),
-		c_sep(c_sep)
+		c_cut(1.0),
+		c_algn(1.0),
+		c_sep(1.0)
 {
+	auto it=p.find("k");
+	if(it!=p.end())	k_pri=k_bkp=lrint(it->second);
+
+	it=p.find("k_pri");
+	if(it!=p.end())	k_pri=lrint(it->second);
+
+	it=p.find("k_bkp");
+	if(it!=p.end())	k_bkp=lrint(it->second);
+
+	it=p.find("c_cut");
+	if(it!=p.end())	c_cut=it->second<-2.0?0:pow(2.0,it->second);
+
+	it=p.find("c_algn");
+	if(it!=p.end())	c_algn=it->second<-2.0?0:pow(2.0,it->second);
+
+	it=p.find("c_sep");
+	if(it!=p.end())	c_sep=it->second<-3.0?0:pow(2.0,it->second);
 }
 
 KsqHybridCostProvisioning::~KsqHybridCostProvisioning() {

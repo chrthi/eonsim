@@ -30,7 +30,7 @@ struct Request;
 
 class ShortestFFLFProvisioning: public ProvisioningScheme {
 public:
-	ShortestFFLFProvisioning();
+	ShortestFFLFProvisioning(const ParameterSet &p);
 	virtual ~ShortestFFLFProvisioning();
 	virtual ProvisioningScheme *clone();
 	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const NetworkGraph::DijkstraData &data, const Request &r);

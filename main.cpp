@@ -20,40 +20,36 @@
  * along with SPP EON Simulator.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <boost/program_options.hpp>
 #include <stddef.h>
 #include <algorithm>
+#include <condition_variable>
 #include <functional>
 #include <iomanip>
 #include <iostream>
 #include <iterator>
 #include <map>
-#include <memory>
-#ifndef NOTHREAD
 #include <mutex>
-#include <condition_variable>
+#include <string>
 #include <thread>
-#endif
 #include <utility>
 #include <vector>
 
 #include "globaldef.h"
+#include "JobIterator.h"
 #include "NetworkGraph.h"
-#include "provisioning_schemes/Chao2012FFProvisioning.h"
-#include "provisioning_schemes/Chen2013MFSBProvisioning.h"
-#include "provisioning_schemes/Tarhan2013PFMBLProvisioning.h"
-#include "provisioning_schemes/KsqHybridCostProvisioning.h"
 #include "provisioning_schemes/ProvisioningScheme.h"
-#include "provisioning_schemes/ShortestFFLFProvisioning.h"
 #include "Simulation.h"
 #include "StatCounter.h"
 
+namespace po = boost::program_options;
+
 struct WorkPackage{
 	size_t index;
-	std::unique_ptr<ProvisioningScheme> p;
+	ProvisioningScheme* p;
 	unsigned int load;
 } nextWork;
 
-#ifndef NOTHREAD
 std::mutex mtx;
 std::condition_variable cvWorker, cvMain;
 bool newWork, newResult;
@@ -83,76 +79,62 @@ static void worker(const NetworkGraph &g) {
 		cvMain.notify_one();
 	}
 }
-#endif
 
 int main(int argc, char **argv) {
-	std::ifstream in("input/ATT_01.txt");
-	NetworkGraph g=NetworkGraph::loadFromMatrix(in);
-	in.close();
+	//handle program options
+	po::options_description desc("Allowed options");
+	desc.add_options()
+	    ("help", "produce help message")
+	    ("opts,p", po::value<std::string>()->default_value(""), "Global options")
+	    ("algs,a", po::value<std::string>()->default_value(""), "Algorithms and their specific options")
+	    ("input,i", po::value<std::string>()->default_value("-"), "Input file. Default: stdin")
+	    ("output,o", po::value<std::string>()->default_value("-"), "Output file. Default: stdout")
+	    ("threads,t", po::value<size_t>()->default_value(std::thread::hardware_concurrency()-1), "Output file. Default: stdout")
+	;
+	po::variables_map vm;
+	po::store(po::parse_command_line(argc, argv, desc), vm);
+	po::notify(vm);
+	JobIterator jobs(vm["opts"].as<std::string>(),vm["algs"].as<std::string>());
 
-#ifndef NOTHREAD
-	const unsigned int nthreads=std::thread::hardware_concurrency()<4?
-			std::thread::hardware_concurrency(): // for the lab pc (Core2)
-			std::thread::hardware_concurrency()>4?
-					std::thread::hardware_concurrency()/2: // for the ICT server (8*4core Xeon)
-					std::thread::hardware_concurrency()-1; // for my laptop (4-core i7)
+	//load the input data (network model) from file or stdin
+	std::ifstream infile;
+	std::istream *instream=&std::cin;
+	if(vm["input"].as<std::string>()!="-") {
+		infile.open(vm["input"].as<std::string>());
+		instream=&infile;
+	}
+	NetworkGraph g=NetworkGraph::loadFromMatrix(*instream);
+	if(infile.is_open()) infile.close();
 
-	std::cerr<<std::thread::hardware_concurrency()<<" Threads supported; using "<<nthreads<<'.'<<std::endl;
-	std::vector<std::thread> threadPool(nthreads);
+	//send the output to a file or stdout
+	std::ofstream outfile;
+	std::ostream *outstream=&std::cout;
+	if(vm["output"].as<std::string>()!="-") {
+		outfile.open(vm["output"].as<std::string>(),std::ofstream::ate|std::ofstream::app);
+		outstream=&outfile;
+	}
+
+	std::cerr<<std::thread::hardware_concurrency()
+		<<" Threads supported; using "<<vm["threads"].as<size_t>()<<'.'
+		<<std::endl;
+	std::vector<std::thread> threadPool(vm["threads"].as<size_t>());
 	for(auto &t:threadPool) t=std::thread(worker,std::ref(g));
-#else
-	Simulation sim(g);
-#endif
-	//ShortestFFLFProvisioning p_fflf;
-	//Chao2012FFProvisioning p_ff(DEFAULT_K);
-	//Chen2013MFSBProvisioning p_mfsb(DEFAULT_K);
-	//Tarhan2013PFMBLProvisioning p_pfmbl0(DEFAULT_K,0), p_pfmbl1(DEFAULT_K,880);
-	KsqHybridCostProvisioning p_ksq(1.0,1.0,1.0);
-	//ProvisioningScheme *ps[]={&p_pfmbl1,&p_pfmbl0,&p_mfsb,&p_ff};
-	ProvisioningScheme *ps[]={&p_ksq};
-	const size_t totalWp=(sizeof(ps)/sizeof(*ps))
-			*((DEFAULT_LOAD_MAX-DEFAULT_LOAD_MIN+DEFAULT_LOAD_STEP)/DEFAULT_LOAD_STEP);
 
-	//stuff new work packages into the thread pool
-	ProvisioningScheme **p=ps;
-	nextWork.load=DEFAULT_LOAD_MIN-DEFAULT_LOAD_STEP;
 	size_t resultIdx=0;
-	nextWork.index=-1;
-	std::cout<<"\"Algorithm\"" TABLE_COL_SEPARATOR "\"Load\""<<TABLE_COL_SEPARATOR
+	*outstream<<"\"Algorithm\"" TABLE_COL_SEPARATOR "\"Load\""<<TABLE_COL_SEPARATOR
 			<<StatCounter::tableHeader
 			<<std::endl;
-	while(p || resultIdx<=nextWork.index) {
-#ifndef NOTHREAD
+	while(!jobs.isEnd() || resultIdx<jobs.getCurrentIteration()) {
 		bool printStat=false;
 		{
 			std::unique_lock<std::mutex> lck(mtx);
 			cvMain.wait(lck,[]{return !newWork || newResult;});
 			if(!newWork) {
-				if(p) {
-#endif
-					nextWork.load+=DEFAULT_LOAD_STEP;
-					if(nextWork.load>DEFAULT_LOAD_MAX) {
-						nextWork.load=DEFAULT_LOAD_MIN;
-						++p;
-					}
-					if(p>=ps+sizeof(ps)/sizeof(*ps)) p=0;
-#ifdef NOTHREAD
-					if(p) {
-					const ProvisioningScheme &prov=**p;
-					const unsigned int &load=nextWork.load;
-					StatCounter stat=sim.run(**p,DEFAULT_SIM_DISCARD,DEFAULT_SIM_ITERS,
-							DEFAULT_AVG_INTARRIVAL,DEFAULT_AVG_INTARRIVAL*nextWork.load);
-					++nextWork.index;
-					resultIdx=nextWork.index+1;
-#else
-				}
-				if(!p){
-					nextWork.p=std::unique_ptr<ProvisioningScheme>();
-				} else {
-					++nextWork.index;
-					nextWork.p=std::move(std::unique_ptr<ProvisioningScheme>((*p)->clone()));
-				}
+				nextWork.index=jobs.getCurrentIteration();
+				nextWork.load=jobs.getParam("load");
+				nextWork.p=*jobs;
 				newWork=true;
+				++jobs;
 			}
 			if(newResult) {
 				for(auto it=results.begin();
@@ -161,8 +143,7 @@ int main(int argc, char **argv) {
 					const ProvisioningScheme &prov=*(it->second.first.p);
 					const unsigned int &load=it->second.first.load;
 					const StatCounter &stat=it->second.second;
-#endif
-					std::cout
+					*outstream
 							//provisioning scheme and its parameters
 							<<'"'<<prov<<'"'<<TABLE_COL_SEPARATOR
 							//Load value
@@ -170,24 +151,22 @@ int main(int argc, char **argv) {
 							//Statistics
 							<<stat
 							<<std::endl;
-#ifndef NOTHREAD
+					delete it->second.first.p;
 					printStat=true;
 				}
 				newResult=false;
 			}
 		}
-		if(p) cvWorker.notify_one();
-		else cvWorker.notify_all();
+		if(jobs.isEnd()) cvWorker.notify_all();
+		else cvWorker.notify_one();
 		if(printStat) {
-#endif
-			std::cout.flush();
-			std::cerr<<'['<<std::setw(3)<<resultIdx*100/totalWp<<std::setw(0)<<"%] "
-					<<resultIdx<<" / "<<totalWp<<" done."<<std::endl;
+			outstream->flush();
+			std::cerr<<'['<<std::setw(3)<<resultIdx*100/jobs.getTotalIterations()<<std::setw(0)<<"%] "
+					<<resultIdx<<" / "<<jobs.getTotalIterations()<<" done."<<std::endl;
 		}
 	}
-#ifndef NOTHREAD
 	//wait for all threads to finish
 	for(auto &t:threadPool) t.join();
-#endif
+
 	return 0;
 }
