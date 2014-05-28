@@ -23,6 +23,10 @@
 #include "Tarhan2013PFMBLProvisioning.h"
 
 #include "../SimulationMsgs.h"
+#include "ProvisioningSchemeFactory.h"
+
+/// by construction, this registers the class in the ProvisioningSchemeFactory factory.
+static const ProvisioningSchemeFactory::Registrar<Tarhan2013PFMBLProvisioning> _reg("pfmbl");
 
 Tarhan2013PFMBLProvisioning::Tarhan2013PFMBLProvisioning(const ProvisioningScheme::ParameterSet &p):
 		k_pri(DEFAULT_K),

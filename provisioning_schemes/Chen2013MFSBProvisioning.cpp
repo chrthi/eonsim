@@ -23,6 +23,10 @@
 #include "Chen2013MFSBProvisioning.h"
 
 #include "../SimulationMsgs.h"
+#include "ProvisioningSchemeFactory.h"
+
+/// by construction, this registers the class in the ProvisioningSchemeFactory factory.
+static const ProvisioningSchemeFactory::Registrar<Chen2013MFSBProvisioning> _reg("mfsb");
 
 Chen2013MFSBProvisioning::Chen2013MFSBProvisioning(const ProvisioningScheme::ParameterSet &p):
 k_pri(DEFAULT_K),

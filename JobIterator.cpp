@@ -29,12 +29,6 @@
 #include <iterator>
 #include <stdexcept>
 
-#include "provisioning_schemes/Chao2012FFProvisioning.h"
-#include "provisioning_schemes/Chen2013MFSBProvisioning.h"
-#include "provisioning_schemes/KsqHybridCostProvisioning.h"
-#include "provisioning_schemes/ProvisioningScheme.h"
-#include "provisioning_schemes/Tarhan2013PFMBLProvisioning.h"
-
 JobIterator::JobIterator(const std::string &opts, const std::string &algs):
 	globalopts(),
 	algopts(),
@@ -45,6 +39,24 @@ JobIterator::JobIterator(const std::string &opts, const std::string &algs):
 {
 	const char *p1=algs.c_str(), *p2, *end;
 	end=algs.end().operator ->();
+	globalopts.insert(std::make_pair("iters",
+			param_t({DEFAULT_SIM_ITERS,DEFAULT_SIM_ITERS,1.0,0})
+			));
+	globalopts.insert(std::make_pair("discard",
+			param_t({DEFAULT_SIM_DISCARD,DEFAULT_SIM_DISCARD,1.0,0})
+			));
+	globalopts.insert(std::make_pair("k",
+			param_t({DEFAULT_K,DEFAULT_K,1.0,0})
+			));
+	globalopts.insert(std::make_pair("load",
+			param_t({DEFAULT_LOAD_MIN,DEFAULT_LOAD_MAX,DEFAULT_LOAD_STEP,0})
+			));
+	globalopts.insert(std::make_pair("bwmin",
+			param_t({DEFAULT_BW_MIN,DEFAULT_BW_MIN,1.0,0})
+			));
+	globalopts.insert(std::make_pair("bwmax",
+			param_t({DEFAULT_BW_MAX,DEFAULT_BW_MAX,1.0,0})
+			));
 	p2=parseOpts(opts.c_str(),opts.end().operator ->(),globalopts);
 	if(p2!=opts.end().operator ->())
 		throw std::runtime_error(
@@ -115,23 +127,17 @@ JobIterator& JobIterator::operator ++() {
 	return *this;
 }
 
-ProvisioningScheme* JobIterator::operator *() const {
-	if(isEnd()) return 0;
-	ProvisioningScheme::ParameterSet ps;
+JobIterator::job_t JobIterator::operator *() const {
+	job_t result={0,""};
+	if(isEnd()) return result;
+	result.index=currentIteration;
+	result.algname=currentAlg->first;
 	for(const auto &p:currentParams)
-		ps.insert(std::make_pair(
+		result.params.insert(std::make_pair(
 				p.first,
 				p.second.min+p.second.current*p.second.step)
 		);
-	if(currentAlg->first=="ff")
-		return new Chao2012FFProvisioning(ps);
-	if(currentAlg->first=="mfsb")
-		return new Chen2013MFSBProvisioning(ps);
-	if(currentAlg->first=="ksq")
-		return new KsqHybridCostProvisioning(ps);
-	if(currentAlg->first=="pfmbl")
-		return new Tarhan2013PFMBLProvisioning(ps);
-	else return 0;
+	return result;
 }
 
 bool JobIterator::isEnd() const {

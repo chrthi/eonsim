@@ -44,33 +44,27 @@
 
 namespace po = boost::program_options;
 
-struct WorkPackage{
-	size_t index;
-	ProvisioningScheme* p;
-	unsigned int load;
-} nextWork;
-
 std::mutex mtx;
 std::condition_variable cvWorker, cvMain;
+JobIterator::job_t nextWork;
+std::map<size_t,std::pair<JobIterator::job_t,const StatCounter>> results;
 bool newWork, newResult;
-std::map<size_t,std::pair<WorkPackage,const StatCounter>> results;
 
 static void worker(const NetworkGraph &g) {
 	Simulation sim(g);
 	while(true) {
-		WorkPackage mywork;
+		JobIterator::job_t mywork;
 		{
 			std::unique_lock<std::mutex> lck(mtx);
 			cvWorker.wait(lck,[]{return newWork;});
 			// consume:
 			mywork=std::move(nextWork);
-			if(mywork.p) newWork=false;
+			if(mywork.algname.size()) newWork=false;
 		}
 		cvMain.notify_one();
-		if(!mywork.p) return;
+		if(!mywork.algname.size()) return;
 		//do the work here
-		StatCounter cnt=sim.run(*mywork.p,DEFAULT_SIM_DISCARD,DEFAULT_SIM_ITERS,
-				DEFAULT_AVG_INTARRIVAL,DEFAULT_AVG_INTARRIVAL*mywork.load);
+		StatCounter cnt=sim.run(mywork);
 		{
 			std::unique_lock<std::mutex> lck(mtx);
 			results.emplace(std::make_pair(mywork.index,std::make_pair(std::move(mywork),cnt)));
@@ -121,45 +115,39 @@ int main(int argc, char **argv) {
 	for(auto &t:threadPool) t=std::thread(worker,std::ref(g));
 
 	size_t resultIdx=0;
-	*outstream<<"\"Algorithm\"" TABLE_COL_SEPARATOR "\"Load\""<<TABLE_COL_SEPARATOR
-			<<StatCounter::tableHeader
-			<<std::endl;
+	std::string lastAlg("");
 	while(!jobs.isEnd() || resultIdx<jobs.getCurrentIteration()) {
-		bool printStat=false;
+		bool printProgress=false;
 		{
 			std::unique_lock<std::mutex> lck(mtx);
 			cvMain.wait(lck,[]{return !newWork || newResult;});
 			if(!newWork) {
-				nextWork.index=jobs.getCurrentIteration();
-				nextWork.load=jobs.getParam("load");
-				nextWork.p=*jobs;
-				newWork=true;
+				nextWork=*jobs;
 				++jobs;
+				newWork=true;
 			}
 			if(newResult) {
 				for(auto it=results.begin();
 						it!=results.end() && it->first==resultIdx;
 						++it, ++resultIdx, results.erase(std::prev(it)) ) {
-					const ProvisioningScheme &prov=*(it->second.first.p);
-					const unsigned int &load=it->second.first.load;
-					const StatCounter &stat=it->second.second;
-					*outstream
-							//provisioning scheme and its parameters
-							<<'"'<<prov<<'"'<<TABLE_COL_SEPARATOR
-							//Load value
-							<<load<<TABLE_COL_SEPARATOR
-							//Statistics
-							<<stat
-							<<std::endl;
-					delete it->second.first.p;
-					printStat=true;
+					if(lastAlg!=it->second.first.algname) {
+						*outstream << '#' << it->second.first.algname << ':';
+						for(const auto &pn:it->second.first.params)
+							*outstream << pn.first << TABLE_COL_SEPARATOR;
+						*outstream<<it->second.second.tableHeader<<std::endl;
+						lastAlg=it->second.first.algname;
+					}
+					for(const auto &pn:it->second.first.params)
+						*outstream<<pn.second << TABLE_COL_SEPARATOR;
+					*outstream << it->second.second <<std::endl;
+					printProgress=true;
 				}
 				newResult=false;
 			}
 		}
 		if(jobs.isEnd()) cvWorker.notify_all();
 		else cvWorker.notify_one();
-		if(printStat) {
+		if(printProgress) {
 			outstream->flush();
 			std::cerr<<'['<<std::setw(3)<<resultIdx*100/jobs.getTotalIterations()<<std::setw(0)<<"%] "
 					<<resultIdx<<" / "<<jobs.getTotalIterations()<<" done."<<std::endl;

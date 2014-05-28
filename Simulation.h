@@ -25,6 +25,7 @@
 
 #include <map>
 
+#include "JobIterator.h"
 #include "NetworkGraph.h"
 #include "NetworkState.h"
 #include "SimulationMsgs.h"
@@ -35,9 +36,7 @@ class StatCounter;
 class Simulation {
 public:
 	Simulation(const NetworkGraph &topology);
-	const StatCounter run(ProvisioningScheme &provision,
-			unsigned long itersDiscard, unsigned long itersTotal,
-			unsigned int avg_interarrival,unsigned int avg_holding);
+	const StatCounter run(const JobIterator::job_t &job);
 	~Simulation();
 	void reset();
 private:

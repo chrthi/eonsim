@@ -28,19 +28,23 @@
 #include <utility>
 #include <vector>
 
-class ProvisioningScheme;
+#include "provisioning_schemes/ProvisioningScheme.h"
 
 class JobIterator {
 public:
 	JobIterator(const std::string &opts, const std::string &algs);
 	virtual ~JobIterator();
 	JobIterator &operator ++();
-	ProvisioningScheme * operator*() const;
 	bool isEnd() const;
 	double getParam(const std::string &name) const;
 	size_t getCurrentIteration() const;
 	size_t getTotalIterations() const;
-
+	typedef struct{
+		size_t index;
+		std::string algname;
+		ProvisioningScheme::ParameterSet params;
+	} job_t;
+	job_t operator*() const;
 private:
 	typedef struct{
 		double min;
@@ -55,6 +59,7 @@ private:
 	optmap_t currentParams;
 	const char * parseOpts(const char *begin, const char *end, optmap_t &optmap) const;
 	size_t totalIterations, currentIteration;
+
 };
 
 #endif /* JOBITERATOR_H_ */

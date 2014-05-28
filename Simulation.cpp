@@ -28,10 +28,11 @@
 #include <boost/random/uniform_int_distribution.hpp>
 #include <stddef.h>
 #include <cmath>
+#include <memory>
 #include <utility>
 
 #include "globaldef.h"
-#include "provisioning_schemes/ProvisioningScheme.h"
+#include "provisioning_schemes/ProvisioningSchemeFactory.h"
 #include "StatCounter.h"
 
 Simulation::~Simulation() {
@@ -43,20 +44,24 @@ Simulation::Simulation(const NetworkGraph& topology):
 				state(topology)
 {}
 
-const StatCounter Simulation::run(ProvisioningScheme &provision,
-		unsigned long itersDiscard, unsigned long itersTotal,
-		unsigned int avg_interarrival, unsigned int avg_holding) {
+const StatCounter Simulation::run(const JobIterator::job_t &job) {
+	auto provision=ProvisioningSchemeFactory::getInstance().create(job.algname,job.params);
+	unsigned long itersDiscard=job.params.at("discard");
+	StatCounter count(itersDiscard);
+	if(!provision) return count;
+	unsigned long itersTotal=job.params.at("iters");
+	unsigned int load=job.params.at("load");
 	boost::random::taus88 rng(0);
-	boost::random::exponential_distribution<> requestTimeGen(1.0/avg_interarrival);
-	boost::random::exponential_distribution<> holdingTimeGen(1.0/avg_holding);
+	boost::random::exponential_distribution<> requestTimeGen(1.0/AVG_INTARRIVAL);
+	boost::random::exponential_distribution<> holdingTimeGen(1.0/(AVG_INTARRIVAL*load));
 	boost::random::uniform_int_distribution<size_t> sourceGen(0,num_vertices(topology.g)-1);
 	boost::random::uniform_int_distribution<size_t> destGen(0,num_vertices(topology.g)-2);
 	boost::random::uniform_int_distribution<unsigned int>bandwidthGen(
-			DEFAULT_BW_MIN,	DEFAULT_BW_MAX);
+			job.params.at("bwmin"), job.params.at("bwmax"));
 	unsigned long nextRequestTime=0;
 	unsigned long currentTime=0;
+
 	reset();
-	StatCounter count(itersDiscard);
 	for(unsigned long numProvisionings=0; numProvisionings<itersTotal; ++numProvisionings) {
 		//terminate all connections that should have terminated by now
 		for(std::map<unsigned long, Provisioning>::iterator nextTerm=activeConnections.begin();
@@ -98,7 +103,7 @@ const StatCounter Simulation::run(ProvisioningScheme &provision,
 		r.bandwidth=ceil((double)bandwidthGen(rng)/SLOT_WIDTH);
 
 		//Run the provisioning algorithm
-		Provisioning p=provision(topology,state,scratchpad,r);
+		Provisioning p=(*provision)(topology,state,scratchpad,r);
 
 		count.countProvisioning(p);
 

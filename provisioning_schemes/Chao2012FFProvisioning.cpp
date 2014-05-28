@@ -28,6 +28,10 @@
 #include "../globaldef.h"
 #include "../modulation.h"
 #include "../SimulationMsgs.h"
+#include "ProvisioningSchemeFactory.h"
+
+/// by construction, this registers the class in the ProvisioningSchemeFactory factory.
+static const ProvisioningSchemeFactory::Registrar<Chao2012FFProvisioning> _reg("ff");
 
 Chao2012FFProvisioning::Chao2012FFProvisioning(const ProvisioningScheme::ParameterSet &p):
 	k_pri(DEFAULT_K),

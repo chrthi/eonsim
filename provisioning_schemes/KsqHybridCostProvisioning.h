@@ -24,6 +24,10 @@
 #define KSQHYBRIDCOSTPROVISIONING_H_
 
 #include <iostream>
+
+#include "../globaldef.h"
+#include "../NetworkGraph.h"
+#include "../NetworkState.h"
 #include "ProvisioningScheme.h"
 
 class KsqHybridCostProvisioning: public ProvisioningScheme {

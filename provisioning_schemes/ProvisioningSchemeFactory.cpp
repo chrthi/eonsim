@@ -1,5 +1,5 @@
 /**
- * @file globaldef.h
+ * @file ProvisioningSchemeFactory.cpp
  *
  */
 
@@ -20,38 +20,29 @@
  * along with SPP EON Simulator.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef GLOBALDEF_H_
-#define GLOBALDEF_H_
+#include "ProvisioningSchemeFactory.h"
 
-#include <stddef.h>
+const ProvisioningSchemeFactory& ProvisioningSchemeFactory::getInstance() {
+	return getMutableInstance();
+}
 
-#define SLOT_WIDTH 12.5
-#define DISTANCE_UNIT 5
-#define NUM_SLOTS 320
+std::unique_ptr<ProvisioningScheme> ProvisioningSchemeFactory::create(
+		const std::string &name,
+		const ProvisioningScheme::ParameterSet& params) const {
+	auto it=factoryFunctionRegistry.find(name);
 
-#define DEFAULT_SIM_ITERS  100000
-#define DEFAULT_SIM_DISCARD 10000
+	if(it==factoryFunctionRegistry.end()) return 0;
+	else return it->second(params);
+}
 
-#define AVG_INTARRIVAL 1000
+ProvisioningSchemeFactory::ProvisioningSchemeFactory() {
 
-#define DEFAULT_K 4
+}
 
-#define DEFAULT_LOAD_MIN 150
-#define DEFAULT_LOAD_MAX 210
-#define DEFAULT_LOAD_STEP  10
+ProvisioningSchemeFactory::~ProvisioningSchemeFactory() {
+}
 
-#define DEFAULT_BW_MIN  10
-#define DEFAULT_BW_MAX 400
-
-#define DEFAULT_GUARDBAND 2
-
-#define TABLE_COL_SEPARATOR ";"
-
-typedef unsigned short specIndex_t;
-typedef unsigned short bandwidth_t;
-typedef unsigned short nodeIndex_t;
-typedef unsigned short linkIndex_t;
-typedef unsigned long simtime_t;
-typedef unsigned short distance_t;
-
-#endif /* GLOBALDEF_H_ */
+ProvisioningSchemeFactory& ProvisioningSchemeFactory::getMutableInstance() {
+	static ProvisioningSchemeFactory f;
+	return f;
+}

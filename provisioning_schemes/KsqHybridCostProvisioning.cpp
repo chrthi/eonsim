@@ -21,6 +21,10 @@
  */
 
 #include "KsqHybridCostProvisioning.h"
+#include "ProvisioningSchemeFactory.h"
+
+/// by construction, this registers the class in the ProvisioningSchemeFactory factory.
+static const ProvisioningSchemeFactory::Registrar<KsqHybridCostProvisioning> _reg("ksq");
 
 KsqHybridCostProvisioning::KsqHybridCostProvisioning(
 		const ProvisioningScheme::ParameterSet &p

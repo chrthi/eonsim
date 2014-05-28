@@ -37,6 +37,10 @@
 #include "../SimulationMsgs.h"
 
 //#include "../NetworkState.h"
+#include "ProvisioningSchemeFactory.h"
+
+/// by construction, this registers the class in the ProvisioningSchemeFactory factory.
+static const ProvisioningSchemeFactory::Registrar<ShortestFFLFProvisioning> _reg("fflf");
 
 using namespace boost;
 
