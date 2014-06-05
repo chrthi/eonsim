@@ -72,7 +72,7 @@ const StatCounter Simulation::run(const JobIterator::job_t &job) {
 			//advance simulation time to the next instant
 			if(nextTerm->first!=currentTime) {
 				currentTime=nextTerm->first;
-				count.countNetworkState(state,currentTime);
+				count.countNetworkState(topology,state,currentTime);
 			}
 
 			//update the network state with the removed connection
@@ -88,7 +88,7 @@ const StatCounter Simulation::run(const JobIterator::job_t &job) {
 		//advance simulation time to the next instant
 		if(nextRequestTime!=currentTime) {
 			currentTime=nextRequestTime;
-			count.countNetworkState(state,currentTime);
+			count.countNetworkState(topology,state,currentTime);
 		}
 
 		//a request event is next.

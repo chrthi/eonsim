@@ -26,8 +26,9 @@
 #include <stddef.h>
 
 #define SLOT_WIDTH 12.5
-#define DISTANCE_UNIT 5
+#define DISTANCE_UNIT 5.0
 #define NUM_SLOTS 320
+#define AMP_DIST 80.0
 
 #define DEFAULT_SIM_ITERS  100000
 #define DEFAULT_SIM_DISCARD 10000

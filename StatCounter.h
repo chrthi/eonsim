@@ -37,7 +37,7 @@ public:
 	void reset(const uint64_t discard);
 	void countProvisioning(const Provisioning&p);
 	void countTermination(const Provisioning&p);
-	void countNetworkState(const NetworkState &s, uint64_t timestamp);
+	void countNetworkState(const NetworkGraph &g, const NetworkState &s, uint64_t timestamp);
 	friend std::ostream& operator<<(std::ostream &o, const StatCounter &s);
 	static const char* const tableHeader;
 	uint64_t getProvisioned() const;
@@ -64,8 +64,11 @@ private:
 
 	double sharability;
 	double fragmentation;
+	double energy;
 	uint64_t specUtil;
 	linkIndex_t numLinks;
+	nodeIndex_t numNodes;
+	unsigned long numAmps;
 	uint64_t simTime;
 };
 

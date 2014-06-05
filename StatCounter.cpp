@@ -38,8 +38,11 @@ StatCounter::StatCounter(const uint64_t discard) :
 	bwTerminated(),
 	sharability(),
 	fragmentation(),
+	energy(),
 	specUtil(),
 	numLinks(),
+	numNodes(),
+	numAmps(),
 	simTime()
 {}
 
@@ -62,6 +65,7 @@ void StatCounter::reset(const uint64_t discard) {
 	bwTerminated=0;
 	sharability=0.0;
 	fragmentation=0.0;
+	energy=0.0;
 	specUtil=0;
 	simTime=0;
 }
@@ -101,24 +105,41 @@ void StatCounter::countTermination(const Provisioning&p) {
 	}
 }
 
-void StatCounter::countNetworkState(const NetworkState& s, uint64_t timestamp) {
+void StatCounter::countNetworkState(const NetworkGraph &g, const NetworkState& s, uint64_t timestamp) {
 	if(discard) return;
 	unsigned long int primary=s.getTotalPri();
 	unsigned long int anyUse=0;
-	numLinks=s.getNumLinks();
+	if(!numLinks) {
+		numLinks=boost::num_edges(g.g);
+		numNodes=boost::num_vertices(g.g);
+		numAmps=g.getNumAmps();
+	}
 	double currentFrag=0.0;
+	unsigned long idleAmps=0;
 	for(linkIndex_t i=0; i<numLinks; ++i) {
 		specIndex_t used=s.getUsedSpectrum(i);
 		anyUse+=used;
+		if(!used) idleAmps+=lrint(ceil(g.link_lengths[i]*DISTANCE_UNIT/AMP_DIST))+1;
 		if(NUM_SLOTS-used>0)
 			currentFrag+=1.0-(double)s.getLargestSegment(i)/(NUM_SLOTS-used);
 	}
 	uint64_t deltaT=timestamp-simTime;
-	fragmentation+=deltaT*currentFrag;
+	fragmentation=fma(deltaT,currentFrag,fragmentation);
 	specUtil+=deltaT*anyUse;
 	if(anyUse-primary>0)
-		sharability+=deltaT*(double)s.getCurrentBkpBw()/(anyUse-primary);
+		sharability=fma(deltaT,(double)s.getCurrentBkpBw()/(anyUse-primary),sharability);
 	simTime=timestamp;
+	const uint64_t *txslots=s.getCurrentTxSlots();
+	double eTx=     txslots[BPSK] * 47.13;
+	eTx=fma((double)txslots[QPSK] , 62.75,eTx);
+	eTx=fma((double)txslots[QAM8] , 78.38,eTx);
+	eTx=fma((double)txslots[QAM16], 94.00,eTx);
+	eTx=fma((double)txslots[QAM32],109.63,eTx);
+	eTx=fma((double)txslots[QAM64],125.23,eTx);
+	energy=fma(
+			deltaT,
+			eTx+(g.getNumAmps()-idleAmps)*30.0,
+			energy);
 }
 
 /**
@@ -148,6 +169,11 @@ std::ostream& operator<<(std::ostream &o, const StatCounter &s) {
 		bandwidth_sum+=s.bwBlocked[e];
 	}
 
+	double e_static=s.simTime*(
+			(s.numLinks/2)*85.0 + s.numNodes*150.0
+			+(s.numAmps/2)*140.0
+			);
+
 	//When changing this, remember to change printTableHeader accordingly!
 	o		//Blocking probability
 			<< (double)(events_sum-s.nProvisioned)/events_sum<<TABLE_COL_SEPARATOR
@@ -161,25 +187,9 @@ std::ostream& operator<<(std::ostream &o, const StatCounter &s) {
 			<< (double) s.specUtil/(NUM_SLOTS*s.simTime*s.numLinks)<<TABLE_COL_SEPARATOR
 			//Primary-to-total blocking reason ratio
 			<< (double)(s.nBlockings[Provisioning::BLOCK_PRI_NOPATH]+s.nBlockings[Provisioning::BLOCK_PRI_NOSPEC])
-				/(events_sum-s.nProvisioned);
-	/*
-	for(int e=0; e<Provisioning::SUCCESS; ++e)
-		o <<'#'<<TABLE_COL_SEPARATOR<<'\t' << static_cast<Provisioning::state_t>(e)
-		  << boost::format(": %6lu conns (%6.3f%%); %8.1f Gbps (%6.3f%%)") %
-		     s.nBlockings[e] % (100.0*(double)s.nBlockings[e]/events_sum) %
-		     (s.bwBlocked[e]*SLOT_WIDTH) % (100.0*(double)s.bwBlocked[e]/bandwidth_sum)
-		  << std::endl;
-	o <<'#'<<TABLE_COL_SEPARATOR<<'\t' << "Provisioned successfully "
-	  << boost::format(": %6lu conns (%6.3f%%); %8.1f Tbps (%6.3f%%)") %
-		 s.nProvisioned % (100.0*(double)s.nProvisioned/events_sum) %
-		 (s.bwProvisioned*SLOT_WIDTH*.001) % (100.0*(double)s.bwProvisioned/bandwidth_sum)
-	  << std::endl;
-	o <<'#'<<TABLE_COL_SEPARATOR<<'\t' << "Terminated               "
-	  << boost::format(": %6lu conns (%6.3f%%); %8.1f Tbps (%6.3f%%)") %
-		 s.nTerminated % (100.0*(double)s.nTerminated/events_sum) %
-		 (s.bwTerminated*SLOT_WIDTH*.001) % (100.0*(double)s.bwTerminated/bandwidth_sum)
-	  << std::endl;
-	  */
+				/(events_sum-s.nProvisioned)<<TABLE_COL_SEPARATOR
+			<< e_static <<TABLE_COL_SEPARATOR
+			<< s.energy;
 	return o;
 }
 
@@ -189,7 +199,9 @@ const char* const StatCounter::tableHeader=
 			"\"Sharability\"" TABLE_COL_SEPARATOR
 			"\"Fragmentation\"" TABLE_COL_SEPARATOR
 			"\"Spectrum Utilization\"" TABLE_COL_SEPARATOR
-			"\"Primary as blocking reason\""
+			"\"Primary as blocking reason\"" TABLE_COL_SEPARATOR
+			"\"Static energy\"" TABLE_COL_SEPARATOR
+			"\"Dynamic energy\""
 			;
 
 uint64_t StatCounter::getProvisioned() const {

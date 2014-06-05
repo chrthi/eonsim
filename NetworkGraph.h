@@ -65,11 +65,9 @@ public:
 
 	typedef std::vector<Graph::edge_descriptor> Path;
 
-//	inline nodeIndex_t getNumNodes() const {return boost::num_vertices(*this); };
-//	inline linkIndex_t getNumLinks() const {return boost::num_edges(*this); };
-
 	void printAsDot(std::ostream &s) const;
 	Path dijkstra(Graph::vertex_descriptor s, Graph::vertex_descriptor d, const DijkstraData &data) const;
+	unsigned long getNumAmps() const;
 
 	class YenKShortestSearch{
 	public:
@@ -91,7 +89,7 @@ private:
 	typedef std::vector<std::pair<nodeIndex_t, nodeIndex_t> >::iterator edgeIterator;
 	NetworkGraph(edgeIterator edge_begin, edgeIterator edge_end,
 			Graph::vertices_size_type numverts, Graph::edges_size_type numedges, const std::vector<distance_t> &dists);
-
+	unsigned long numAmps;
 };
 
 std::ostream & operator<<(std::ostream &os, const NetworkGraph::Path& p);

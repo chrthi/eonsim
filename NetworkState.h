@@ -51,9 +51,6 @@ public:
 	specIndex_t getUsedSpectrum(linkIndex_t l) const;
 	specIndex_t getLargestSegment(linkIndex_t l) const;
 
-	linkIndex_t getNumLinks() const {
-		return numLinks;
-	}
 	void sanityCheck(const std::multimap<unsigned long, Provisioning> &conns) const;
 
 	uint64_t getCurrentBkpBw() const;
@@ -64,10 +61,15 @@ public:
 			const specIndex_t begin, const specIndex_t end) const;
 	unsigned int countFreeBlocks(const NetworkGraph::Path &p,
 			const specIndex_t begin, const specIndex_t end) const;
+	uint64_t getCurrentSwitchings() const;
+	const uint64_t* getCurrentTxSlots() const;
+	linkIndex_t getNumLinks() const;
+	nodeIndex_t getNumNodes() const;
 
 private:
 	NetworkState(const NetworkState &n);
 	linkIndex_t numLinks;
+	nodeIndex_t numNodes;
 	spectrum_bits *primaryUse;
 	spectrum_bits *anyUse;
 	/**
@@ -77,6 +79,8 @@ private:
 	 */
 	spectrum_bits *sharing;
 	uint64_t currentBkpBw;
+	uint64_t currentSwitchings; ///< sum of all current primary connection's hop counts
+	uint64_t currentTxSlots[MOD_NONE];
 };
 
 #endif /* NETWORKSTATE_H_ */

@@ -35,10 +35,13 @@
 
 NetworkState::NetworkState(const NetworkGraph& topology) :
 numLinks(boost::num_edges(topology.g)),
+numNodes(boost::num_vertices(topology.g)),
 primaryUse(new spectrum_bits[numLinks]),
 anyUse(new spectrum_bits[numLinks]),
 sharing(new spectrum_bits[numLinks*numLinks]),
-currentBkpBw(0)
+currentBkpBw(0),
+currentSwitchings(0),
+currentTxSlots()
 {
 }
 
@@ -81,6 +84,8 @@ void NetworkState::provision(const Provisioning &p) {
 			}
 		}
 	currentBkpBw+=(p.bkpSpecEnd-p.bkpSpecBegin)*p.bkpPath.size();
+	currentSwitchings+=p.priPath.size();
+	currentTxSlots[p.priMod]+=p.priSpecEnd-p.priSpecBegin;
 }
 
 void NetworkState::terminate(const Provisioning &p) {
@@ -109,6 +114,8 @@ void NetworkState::terminate(const Provisioning &p) {
 			anyUse[itb->idx]|=shb[i];
 	}
 	currentBkpBw-=(p.bkpSpecEnd-p.bkpSpecBegin)*p.bkpPath.size();
+	currentSwitchings-=p.priPath.size();
+	currentTxSlots[p.priMod]-=p.priSpecEnd-p.priSpecBegin;
 }
 
 NetworkState::spectrum_bits NetworkState::priAvailability(
@@ -254,3 +261,28 @@ unsigned int NetworkState::countFreeBlocks(const NetworkGraph::Path& p,
 			if(!anyUse[e.idx][i]) ++result;
 	return result;
 }
+
+uint64_t NetworkState::getCurrentSwitchings() const {
+	return currentSwitchings;
+}
+
+linkIndex_t NetworkState::getNumLinks() const {
+	return numLinks;
+}
+
+nodeIndex_t NetworkState::getNumNodes() const {
+	return numNodes;
+}
+
+const uint64_t* NetworkState::getCurrentTxSlots() const {
+	return currentTxSlots;
+}
+/*
+ * Energy
+ * Cicek's code:
+#define En_idle 150 //node idle power? / diff active-idle for a node
+#define E_transceiver 5.9 // 0.01 is receiver, 5.89 is transmitter
+#define E_switch 1.757 //switching energy, per connection and link
+#define E_Amp 9 // E_Amp*((length/80)+2)
+
+ */
