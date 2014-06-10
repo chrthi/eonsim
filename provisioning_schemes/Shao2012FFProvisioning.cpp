@@ -1,5 +1,5 @@
 /**
- * @file Chao2012FFProvisioning.cpp
+ * @file Shao2012FFProvisioning.cpp
  *
  */
 
@@ -20,7 +20,7 @@
  * along with SPP EON Simulator.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "Chao2012FFProvisioning.h"
+#include "Shao2012FFProvisioning.h"
 
 #include <boost/graph/detail/compressed_sparse_row_struct.hpp>
 #include <vector>
@@ -31,9 +31,9 @@
 #include "ProvisioningSchemeFactory.h"
 
 /// by construction, this registers the class in the ProvisioningSchemeFactory factory.
-static const ProvisioningSchemeFactory::Registrar<Chao2012FFProvisioning> _reg("ff");
+static const ProvisioningSchemeFactory::Registrar<Shao2012FFProvisioning> _reg("ff");
 
-Chao2012FFProvisioning::Chao2012FFProvisioning(const ProvisioningScheme::ParameterSet &p):
+Shao2012FFProvisioning::Shao2012FFProvisioning(const ProvisioningScheme::ParameterSet &p):
 	k_pri(DEFAULT_K),
 	k_bkp(DEFAULT_K)
 {
@@ -48,10 +48,10 @@ Chao2012FFProvisioning::Chao2012FFProvisioning(const ProvisioningScheme::Paramet
 		k_bkp=lrint(it->second);
 }
 
-Chao2012FFProvisioning::~Chao2012FFProvisioning() {
+Shao2012FFProvisioning::~Shao2012FFProvisioning() {
 }
 
-Provisioning Chao2012FFProvisioning::operator ()(const NetworkGraph& g,
+Provisioning Shao2012FFProvisioning::operator ()(const NetworkGraph& g,
 		const NetworkState& s, const NetworkGraph::DijkstraData &data, const Request& r) {
 	Provisioning result;
 	result.bandwidth=r.bandwidth;
@@ -145,10 +145,10 @@ Provisioning Chao2012FFProvisioning::operator ()(const NetworkGraph& g,
 	return result;
 }
 
-std::ostream& Chao2012FFProvisioning::print(std::ostream& o) const {
+std::ostream& Shao2012FFProvisioning::print(std::ostream& o) const {
 	return o<<"FF("<<k_pri<<','<<k_bkp<<')';
 }
 
-ProvisioningScheme* Chao2012FFProvisioning::clone() {
-	return new Chao2012FFProvisioning(*this);
+ProvisioningScheme* Shao2012FFProvisioning::clone() {
+	return new Shao2012FFProvisioning(*this);
 }

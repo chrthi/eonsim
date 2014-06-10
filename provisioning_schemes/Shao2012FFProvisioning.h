@@ -1,5 +1,5 @@
 /**
- * @file Chao2012FFProvisioning.h
+ * @file Shao2012FFProvisioning.h
  *
  */
 
@@ -20,16 +20,16 @@
  * along with SPP EON Simulator.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CHAO2012FFPROVISIONING_H_
-#define CHAO2012FFPROVISIONING_H_
+#ifndef SHAO2012FFPROVISIONING_H_
+#define SHAO2012FFPROVISIONING_H_
 
 #include <iostream>
 #include "ProvisioningScheme.h"
 
-class Chao2012FFProvisioning: public ProvisioningScheme {
+class Shao2012FFProvisioning: public ProvisioningScheme {
 public:
-	Chao2012FFProvisioning(const ParameterSet &p);
-	virtual ~Chao2012FFProvisioning();
+	Shao2012FFProvisioning(const ParameterSet &p);
+	virtual ~Shao2012FFProvisioning();
 	virtual ProvisioningScheme *clone();
 	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const NetworkGraph::DijkstraData &data, const Request &r);
 protected:
@@ -38,4 +38,4 @@ private:
 	unsigned int k_pri, k_bkp;
 };
 
-#endif /* CHAO2012FFPROVISIONING_H_ */
+#endif /* SHAO2012FFPROVISIONING_H_ */
