@@ -45,13 +45,13 @@ KsqHybridCostProvisioning::KsqHybridCostProvisioning(
 	if(it!=p.end())	k_bkp=lrint(it->second);
 
 	it=p.find("c_cut");
-	if(it!=p.end())	c_cut=it->second<-2.0?0:pow(2.0,it->second);
+	if(it!=p.end())	c_cut=it->second<=-3.0?0:pow(2.0,it->second);
 
 	it=p.find("c_algn");
-	if(it!=p.end())	c_algn=it->second<-2.0?0:pow(2.0,it->second);
+	if(it!=p.end())	c_algn=it->second<=-3.0?0:pow(2.0,it->second);
 
 	it=p.find("c_sep");
-	if(it!=p.end())	c_sep=it->second<-3.0?0:pow(2.0,it->second);
+	if(it!=p.end())	c_sep=it->second<=-3.5?0:pow(2.0,it->second);
 }
 
 KsqHybridCostProvisioning::~KsqHybridCostProvisioning() {
