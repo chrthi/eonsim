@@ -5,6 +5,10 @@ import sys, math;
 adj=[]
 nan=float('nan')
 
+scalefac=0.01;
+if len(sys.argv)>1:
+    scalefac=float(sys.argv[1]);
+
 n_node=int(sys.stdin.readline())
 firstline=sys.stdin.readline().split()
 if len(firstline)==1: #This is the link number. Discard the following matrix.
@@ -21,5 +25,5 @@ sys.stdout.write("graph {\n")
 for m in range(n_node):
     for n in range(m):
         if not math.isnan(adj[m][n]):
-            sys.stdout.write("{:d} -- {:d} [label=\"{:g}\"];\n".format(m,n,adj[m][n]))
+            sys.stdout.write("{:d} -- {:d} [label=\"{:g}\" len={:g}];\n".format(m,n,adj[m][n],adj[m][n]*scalefac))
 sys.stdout.write("}\n")
