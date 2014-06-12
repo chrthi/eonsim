@@ -43,7 +43,8 @@ StatCounter::StatCounter(const uint64_t discard) :
 	numLinks(),
 	numNodes(),
 	numAmps(),
-	simTime()
+	simTime(),
+	discardedTime()
 {}
 
 StatCounter::~StatCounter() {
@@ -106,7 +107,12 @@ void StatCounter::countTermination(const Provisioning&p) {
 }
 
 void StatCounter::countNetworkState(const NetworkGraph &g, const NetworkState& s, uint64_t timestamp) {
-	if(discard) return;
+	if(discard) {
+		simTime=timestamp;
+		return;
+	}
+	if(!discardedTime)
+		discardedTime=timestamp;
 	unsigned long int primary=s.getTotalPri();
 	unsigned long int anyUse=0;
 	if(!numLinks) {
@@ -169,10 +175,11 @@ std::ostream& operator<<(std::ostream &o, const StatCounter &s) {
 		bandwidth_sum+=s.bwBlocked[e];
 	}
 
-	double e_static=s.simTime*(
+	double p_static=
 			(s.numLinks/2)*85.0 + s.numNodes*150.0
-			+(s.numAmps/2)*140.0
-			);
+			+(s.numAmps/2)*140.0;
+
+	uint64_t t=s.simTime-s.discardedTime;
 
 	//When changing this, remember to change printTableHeader accordingly!
 	o		//Blocking probability
@@ -180,16 +187,16 @@ std::ostream& operator<<(std::ostream &o, const StatCounter &s) {
 			//Bandwidth blocking probability
 			<< (double)(bandwidth_sum-s.bwProvisioned)/bandwidth_sum<<TABLE_COL_SEPARATOR
 			//Sharability
-			<< s.sharability / (s.simTime)<<TABLE_COL_SEPARATOR
+			<< s.sharability/t <<TABLE_COL_SEPARATOR
 			//Fragmentation
-			<< s.fragmentation/(s.simTime*s.numLinks)<<TABLE_COL_SEPARATOR
+			<< s.fragmentation/(t*s.numLinks)<<TABLE_COL_SEPARATOR
 			//Spectrum Utilization
-			<< (double) s.specUtil/(NUM_SLOTS*s.simTime*s.numLinks)<<TABLE_COL_SEPARATOR
+			<< (double) s.specUtil/(NUM_SLOTS*t*s.numLinks)<<TABLE_COL_SEPARATOR
 			//Primary-to-total blocking reason ratio
 			<< (double)(s.nBlockings[Provisioning::BLOCK_PRI_NOPATH]+s.nBlockings[Provisioning::BLOCK_PRI_NOSPEC])
 				/(events_sum-s.nProvisioned)<<TABLE_COL_SEPARATOR
-			<< e_static <<TABLE_COL_SEPARATOR
-			<< s.energy;
+			<< p_static <<TABLE_COL_SEPARATOR
+			<< s.energy/t;
 	return o;
 }
 

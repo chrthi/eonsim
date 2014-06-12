@@ -69,7 +69,7 @@ private:
 	linkIndex_t numLinks;
 	nodeIndex_t numNodes;
 	unsigned long numAmps;
-	uint64_t simTime;
+	uint64_t simTime, discardedTime;
 };
 
 #endif /* STATCOUNTER_H_ */
