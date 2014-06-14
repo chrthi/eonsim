@@ -27,6 +27,17 @@
 
 /// by construction, this registers the class in the ProvisioningSchemeFactory factory.
 static const ProvisioningSchemeFactory::Registrar<Chen2013MFSBProvisioning> _reg("mfsb");
+const char *const Chen2013MFSBProvisioning::helpstr=
+		"The Minimum Free Spectrum Block heuristic";
+const ProvisioningScheme::paramDesc_t Chen2013MFSBProvisioning::pdesc[]={
+		{"k",      "0<k",      XSTR(DEFAULT_K),
+				"Default value for k_pri and k_bkp"},
+		{"k_pri",  "0<k_pri",  "k",
+				"Number of primary paths to consider"},
+		{"k_bkp",  "0<k_pri",  "k",
+				"Number of backup paths to consider"},
+		{0,0,0,0}
+};
 
 Chen2013MFSBProvisioning::Chen2013MFSBProvisioning(const ProvisioningScheme::ParameterSet &p):
 k_pri(DEFAULT_K),
@@ -144,7 +155,7 @@ Provisioning Chen2013MFSBProvisioning::operator ()(const NetworkGraph& g,
 }
 
 std::ostream& Chen2013MFSBProvisioning::print(std::ostream& o) const {
-	return o<<"MFSB("<<k_pri<<','<<k_bkp<<')';
+	return printFormatted(o,helpstr,pdesc);
 }
 
 ProvisioningScheme* Chen2013MFSBProvisioning::clone() {

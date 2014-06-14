@@ -26,6 +26,7 @@
 #include <functional>
 #include <map>
 #include <string>
+#include <iostream>
 
 #include "ProvisioningScheme.h"
 
@@ -34,6 +35,7 @@ public:
 	~ProvisioningSchemeFactory();
 	static const ProvisioningSchemeFactory &getInstance();
 	std::unique_ptr<ProvisioningScheme> create(const std::string &name, const ProvisioningScheme::ParameterSet &params) const;
+	std::ostream &printHelp(std::ostream &o) const;
 private:
 	ProvisioningSchemeFactory();
 	ProvisioningSchemeFactory(const ProvisioningSchemeFactory &);

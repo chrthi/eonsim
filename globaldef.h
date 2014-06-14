@@ -25,6 +25,9 @@
 
 #include <stddef.h>
 
+#define XSTR(s) STR(s)
+#define STR(s) #s
+
 #define SLOT_WIDTH 12.5
 #define DISTANCE_UNIT 5.0
 #define NUM_SLOTS 320

@@ -46,3 +46,11 @@ ProvisioningSchemeFactory& ProvisioningSchemeFactory::getMutableInstance() {
 	static ProvisioningSchemeFactory f;
 	return f;
 }
+
+std::ostream& ProvisioningSchemeFactory::printHelp(std::ostream& o) const {
+	for(const auto &p:factoryFunctionRegistry) {
+		auto ps=p.second(ProvisioningScheme::ParameterSet());
+		o<<p.first<<": "<<*ps<<std::endl;
+	}
+	return o;
+}

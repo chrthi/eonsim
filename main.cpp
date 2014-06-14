@@ -38,7 +38,7 @@
 #include "globaldef.h"
 #include "JobIterator.h"
 #include "NetworkGraph.h"
-#include "provisioning_schemes/ProvisioningScheme.h"
+#include "provisioning_schemes/ProvisioningSchemeFactory.h"
 #include "Simulation.h"
 #include "StatCounter.h"
 
@@ -74,21 +74,61 @@ static void worker(const NetworkGraph &g) {
 	}
 }
 
+static void printUsage(po::options_description &desc) {
+	std::cerr<<desc<<"Supported Algorithms:"<<std::endl;
+	ProvisioningSchemeFactory::getInstance().printHelp(std::cerr);
+}
+
 int main(int argc, char **argv) {
 	//handle program options
-	po::options_description desc("Allowed options");
+	po::options_description desc("Usage");
 	desc.add_options()
-	    ("help", "produce help message")
-	    ("opts,p", po::value<std::string>()->default_value(""), "Global options")
-	    ("algs,a", po::value<std::string>()->default_value(""), "Algorithms and their specific options")
-	    ("input,i", po::value<std::string>()->default_value("-"), "Input file. Default: stdin")
-	    ("output,o", po::value<std::string>()->default_value("-"), "Output file. Default: stdout")
-	    ("threads,t", po::value<size_t>()->default_value(std::thread::hardware_concurrency()-1), "Output file. Default: stdout")
+	    ("help,h", "produce help message")
+	    ("opts,p", po::value<std::string>()->default_value(""),
+	    		"Global options")
+	    ("algs,a", po::value<std::string>()->default_value(""),
+	    		"Algorithms and their specific options")
+	    ("input,i", po::value<std::string>()->default_value("-"),
+	    		"Input file. Default: stdin")
+	    ("output,o", po::value<std::string>()->default_value("-"),
+	    		"Output file. Default: stdout")
+	    ("threads,t", po::value<size_t>()->default_value(
+	    			std::thread::hardware_concurrency() ),
+	    		"Number of threads."
+	    		" The default is determined from the hardware.")
+	    ("skip,s", po::value<size_t>()->default_value(0),
+	    		"Skip the first n iterations."
+	    		" Useful to continue after an interruption.")
 	;
 	po::variables_map vm;
-	po::store(po::parse_command_line(argc, argv, desc), vm);
-	po::notify(vm);
+	try{
+		po::store(po::parse_command_line(argc, argv, desc), vm);
+		po::notify(vm);
+	} catch( boost::program_options::unknown_option & e )
+	{
+		std::cerr<<e.what()<<std::endl;
+		printUsage(desc);
+		return -1;
+	}
+	//set up the job iterator (parameter combinations)
 	JobIterator jobs(vm["opts"].as<std::string>(),vm["algs"].as<std::string>());
+
+	if(vm.count("help") || jobs.getTotalIterations()==0) {
+		printUsage(desc);
+		return 0;
+	}
+
+	std::cerr<<"Configured for "<<jobs.getTotalIterations()<<" iterations";
+	if(vm.count("skip")) {
+		size_t s=vm["skip"].as<size_t>();
+		std::cerr<<", skipping the first "<<s;
+		if(jobs.getTotalIterations()<=s) {
+			std::cerr<<" - this doesn't make sense."<<std::endl;
+			return -1;
+		}
+		for(size_t i=0; i<s; ++i) ++jobs;
+	}
+	std::cerr<<'.'<<std::endl;
 
 	//load the input data (network model) from file or stdin
 	std::ifstream infile;

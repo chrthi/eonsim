@@ -33,11 +33,18 @@ class ProvisioningScheme {
 public:
 	typedef std::map<std::string,double> ParameterSet;
 	virtual ~ProvisioningScheme();
-	virtual ProvisioningScheme *clone() =0;
 	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const NetworkGraph::DijkstraData &data, const Request &r) =0;
 	friend std::ostream& operator<<(std::ostream& o, ProvisioningScheme const& s);
 protected:
+	typedef struct{
+		const char *name;
+		const char *limits;
+		const char *defval;
+		const char *help;
+	} paramDesc_t;
 	virtual std::ostream& print(std::ostream &o) const =0;
+	virtual std::ostream& printFormatted(std::ostream &o,
+			const char *const helpstr, const paramDesc_t *const params) const;
 };
 
 #endif /* PROVISIONINGSCHEME_H_ */

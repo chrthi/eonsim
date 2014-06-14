@@ -65,7 +65,7 @@ JobIterator::JobIterator(const std::string &opts, const std::string &algs):
 			+std::string(p2-opts.c_str(),'-')+'^'
 			);
 
-	while(1){
+	while(p1<end){
 		//algorithm name
 		while(p1<end && isspace(*p1)) ++p1;
 		p2=p1;

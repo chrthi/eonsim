@@ -34,11 +34,12 @@ class KsqHybridCostProvisioning: public ProvisioningScheme {
 public:
 	KsqHybridCostProvisioning(const ParameterSet &p);
 	virtual ~KsqHybridCostProvisioning();
-	virtual ProvisioningScheme *clone();
 	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const NetworkGraph::DijkstraData &data, const Request &r);
 protected:
 	virtual std::ostream& print(std::ostream &o) const;
 private:
+	static const char *const helpstr;
+	static const paramDesc_t pdesc[];
 	unsigned int k_pri; ///< Number of paths to consider for the primary
 	unsigned int k_bkp; ///< Number of paths to consider for backup, per primary
 	double costp(const NetworkGraph &g, const NetworkState &s,

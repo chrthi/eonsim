@@ -35,6 +35,8 @@ public:
 protected:
 	virtual std::ostream& print(std::ostream &o) const;
 private:
+	static const char *const helpstr;
+	static const paramDesc_t pdesc[];
 	unsigned int k_pri, k_bkp;
 	unsigned int c1;
 };

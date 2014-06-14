@@ -35,6 +35,7 @@ public:
 	virtual ProvisioningScheme *clone();
 	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const NetworkGraph::DijkstraData &data, const Request &r);
 protected:
+	static const char *const helpstr;
 	virtual std::ostream& print(std::ostream &o) const;
 };
 

@@ -25,13 +25,28 @@
 #include "../SimulationMsgs.h"
 #include "ProvisioningSchemeFactory.h"
 
+#define DEFAULT_C1 0.88
+
 /// by construction, this registers the class in the ProvisioningSchemeFactory factory.
 static const ProvisioningSchemeFactory::Registrar<Tarhan2013PFMBLProvisioning> _reg("pfmbl");
+const char *const Tarhan2013PFMBLProvisioning::helpstr=
+		"The k-squared hybrid heuristic";
+const ProvisioningScheme::paramDesc_t Tarhan2013PFMBLProvisioning::pdesc[]={
+		{"k",      "0<k",      XSTR(DEFAULT_K),
+				"Default value for k_pri and k_bkp"},
+		{"k_pri",  "0<k_pri",  "k",
+				"Number of primary paths to consider"},
+		{"k_bkp",  "0<k_pri",  "k",
+				"Number of backup paths to consider per primary"},
+		{"c1",     "0<=c1",    XSTR(DEFAULT_C1),
+				"The \"c1\" weight of PF-MBL1. If c1=0, PF-MBL0 is selected"},
+		{0,0,0,0}
+};
 
 Tarhan2013PFMBLProvisioning::Tarhan2013PFMBLProvisioning(const ProvisioningScheme::ParameterSet &p):
 		k_pri(DEFAULT_K),
 		k_bkp(DEFAULT_K),
-		c1(880)
+		c1(DEFAULT_C1*1000)
 {
 	auto it=p.find("k");
 	if(it!=p.end())
@@ -147,10 +162,7 @@ Provisioning Tarhan2013PFMBLProvisioning::operator ()(const NetworkGraph& g,
 }
 
 std::ostream& Tarhan2013PFMBLProvisioning::print(std::ostream& o) const {
-	if(c1)
-		return o<<"PF-MBL_1"<<'('<<k_pri<<','<<k_bkp<<", "<<c1*.001<<')';
-	else
-		return o<<"PF-MBL_0"<<'('<<k_pri<<','<<k_bkp<<')';
+	return printFormatted(o,helpstr,pdesc);
 }
 
 ProvisioningScheme* Tarhan2013PFMBLProvisioning::clone() {

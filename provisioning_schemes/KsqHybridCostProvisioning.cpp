@@ -23,17 +23,38 @@
 #include "KsqHybridCostProvisioning.h"
 #include "ProvisioningSchemeFactory.h"
 
+#define DEFAULT_WEIGHT 1.0
+
 /// by construction, this registers the class in the ProvisioningSchemeFactory factory.
 static const ProvisioningSchemeFactory::Registrar<KsqHybridCostProvisioning> _reg("ksq");
+const char *const KsqHybridCostProvisioning::helpstr=
+		"The k-squared hybrid heuristic";
+const ProvisioningScheme::paramDesc_t KsqHybridCostProvisioning::pdesc[]={
+		{"k",      "0<k",      XSTR(DEFAULT_K),
+				"Default value for k_pri and k_bkp"},
+		{"k_pri",  "0<k_pri",  "k",
+				"Number of primary paths to consider"},
+		{"k_bkp",  "0<k_pri",  "k",
+				"Number of backup paths to consider per primary"},
+		{"c_cut",  "0<=c_cut", XSTR(DEFAULT_WEIGHT),
+				"Weight of the \"Cut\" metric"},
+		{"c_algn", "0<=c_algn", XSTR(DEFAULT_WEIGHT),
+				"Weight of the \"Misalignment\" metric"},
+		{"c_fsb",  "0<=c_fsb", XSTR(DEFAULT_WEIGHT),
+				"Weight of the \"free spectrum block\" metric"},
+		{"mode",   "{1,2,3}",    "3",
+				"Consider the hybrid metric for (1) Primary, (2) Backup, (3) both"},
+		{0,0,0,0}
+};
 
 KsqHybridCostProvisioning::KsqHybridCostProvisioning(
 		const ProvisioningScheme::ParameterSet &p
 ):
 		k_pri(DEFAULT_K),
 		k_bkp(DEFAULT_K),
-		c_cut(1.0),
-		c_algn(1.0),
-		c_sep(1.0)
+		c_cut(DEFAULT_WEIGHT),
+		c_algn(DEFAULT_WEIGHT),
+		c_sep(DEFAULT_WEIGHT)
 {
 	auto it=p.find("k");
 	if(it!=p.end())	k_pri=k_bkp=lrint(it->second);
@@ -133,29 +154,12 @@ Provisioning KsqHybridCostProvisioning::operator ()(
 }
 
 std::ostream& KsqHybridCostProvisioning::print(std::ostream& o) const {
-	return o<<"K-SQ("<<k_pri<<", "<<k_bkp<<')'
-			<<TABLE_COL_SEPARATOR<<c_cut
-			<<TABLE_COL_SEPARATOR<<c_algn
-			<<TABLE_COL_SEPARATOR<<c_sep;
-}
-
-ProvisioningScheme* KsqHybridCostProvisioning::clone() {
-	return new KsqHybridCostProvisioning(*this);
+	return printFormatted(o,helpstr,pdesc);
 }
 
 inline double KsqHybridCostProvisioning::costp(const NetworkGraph& g,
 		const NetworkState& s, const NetworkGraph::Path& pp, specIndex_t beginp,
 		specIndex_t endp) const {
-	/* Ideas:
-	 *  1 * Number of free blocks that will be used. [O(hops*slots)]
-	 * a1 * Number of spectrum "cuts" (count only if free slots (anyUse=0) on left and right) [O(hops); 0,0.2,0.5,1,5,10]
-	 * a2 * Number of misalignments: free slots (anyUse) on adjacent links/nodedeg [O(hops*slots); 0.2,0.4,0.8,1.6,3.2,6.4]
-	 * a3 * Distance from left/right * hops [0:0.1:0.5]
-	 * 0  * hopcount-slots product [O(hops*slots)]
-	 *
-	 * a1, a2 in {0.00, 0.25, 0.50, 1.00, 2.00, 4.00};
-	 * a3 in {0.0625, 0.125, 0.250, 0.500, 1.000};
-	 */
 	return	(double)(  pp.size()*(endp-beginp))
 			+c_cut *(         s.calcCuts(g,pp,beginp,endp))
 			+c_algn*(s.calcMisalignments(g,pp,beginp,endp))

@@ -41,6 +41,8 @@
 
 /// by construction, this registers the class in the ProvisioningSchemeFactory factory.
 static const ProvisioningSchemeFactory::Registrar<ShortestFFLFProvisioning> _reg("fflf");
+const char *const ShortestFFLFProvisioning::helpstr=
+		"The Shortest-path first-fit/last-fit heuristic";
 
 using namespace boost;
 
@@ -133,7 +135,7 @@ Provisioning ShortestFFLFProvisioning::operator ()(const NetworkGraph& g,
 }
 
 std::ostream& ShortestFFLFProvisioning::print(std::ostream& o) const {
-	return o<<"ShFFLF";
+	return o<<helpstr<<" (No parameters)."<<std::endl;
 }
 
 ProvisioningScheme* ShortestFFLFProvisioning::clone() {

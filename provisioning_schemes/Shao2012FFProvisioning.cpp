@@ -32,6 +32,17 @@
 
 /// by construction, this registers the class in the ProvisioningSchemeFactory factory.
 static const ProvisioningSchemeFactory::Registrar<Shao2012FFProvisioning> _reg("ff");
+const char *const Shao2012FFProvisioning::helpstr=
+		"A simple first-fit heuristic";
+const ProvisioningScheme::paramDesc_t Shao2012FFProvisioning::pdesc[]={
+		{"k",      "0<k",      XSTR(DEFAULT_K),
+				"Default value for k_pri and k_bkp"},
+		{"k_pri",  "0<k_pri",  "k",
+				"Number of primary paths to consider"},
+		{"k_bkp",  "0<k_pri",  "k",
+				"Number of backup paths to consider"},
+		{0,0,0,0}
+};
 
 Shao2012FFProvisioning::Shao2012FFProvisioning(const ProvisioningScheme::ParameterSet &p):
 	k_pri(DEFAULT_K),
@@ -146,7 +157,7 @@ Provisioning Shao2012FFProvisioning::operator ()(const NetworkGraph& g,
 }
 
 std::ostream& Shao2012FFProvisioning::print(std::ostream& o) const {
-	return o<<"FF("<<k_pri<<','<<k_bkp<<')';
+	return printFormatted(o,helpstr,pdesc);
 }
 
 ProvisioningScheme* Shao2012FFProvisioning::clone() {

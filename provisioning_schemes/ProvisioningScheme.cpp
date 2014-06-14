@@ -22,11 +22,25 @@
 
 #include "ProvisioningScheme.h"
 
-#include <iostream>
+#include <iomanip>
 
 ProvisioningScheme::~ProvisioningScheme() {
 }
 
 std::ostream& operator<<(std::ostream& o, ProvisioningScheme const& s) {
 	return s.print(o);
+}
+
+std::ostream& ProvisioningScheme::printFormatted(std::ostream& o,
+		const char* const helpstr, const paramDesc_t* const params) const {
+	o<<helpstr<<". Supported parameters:"<<std::endl;
+	o.fill(' ');
+	o<<std::left;
+	for(size_t i=0; params[i].name; ++i) {
+		o<<'\t' << std::setw(8) << params[i].name << std::setw(0)
+		 << std::setw(12) << params[i].limits << std::setw(0)
+		 <<" default=" << std::setw(5) << params[i].defval << std::setw(0)
+		 <<' ' << params[i].help <<'.'<< std::endl;
+	}
+	return o;
 }
