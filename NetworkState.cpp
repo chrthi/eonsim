@@ -4,20 +4,20 @@
  */
 
 /*
- * This file is part of SPP EON Simulator.
+ * This file is part of eonsim.
  *
- * SPP EON Simulator is free software: you can redistribute it and/or modify
+ * eonsim is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * SPP EON Simulator is distributed in the hope that it will be useful,
+ * eonsim is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with SPP EON Simulator.  If not, see <http://www.gnu.org/licenses/>.
+ * along with eonsim.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "NetworkState.h"
@@ -30,8 +30,9 @@
 #include "NetworkGraph.h"
 #include "Simulation.h"
 
-//use this when testing new provisioning methods to check if they generate illegal provisionings
-//#define DEBUG
+//use this when testing new provisioning methods to check if they generate illegal provisionings.
+//Alternatively, compile with make -DPROVDEBUG
+//#define PROVDEBUG
 
 NetworkState::NetworkState(const NetworkGraph& topology) :
 numLinks(boost::num_edges(topology.g)),
@@ -55,7 +56,7 @@ void NetworkState::provision(const Provisioning &p) {
 	typedef NetworkGraph::Path::const_iterator edgeIt;
 	for(edgeIt it=p.priPath.begin(); it!=p.priPath.end(); ++it) {
 		for(specIndex_t i=p.priSpecBegin;i<p.priSpecEnd;++i) {
-#ifdef DEBUG
+#ifdef PROVDEBUG
 			assert(!primaryUse[it->idx][i]);
 			assert(!anyUse[it->idx][i]);
 #endif
@@ -68,11 +69,11 @@ void NetworkState::provision(const Provisioning &p) {
 			anyUse[it->idx][i]=true;
 	for(edgeIt itb=p.bkpPath.begin(); itb!=p.bkpPath.end(); ++itb)
 		for(edgeIt itp=p.priPath.begin(); itp!=p.priPath.end(); ++itp) {
-#ifdef DEBUG
+#ifdef PROVDEBUG
 			assert(itb->idx!=itp->idx);
 #endif
 			for(specIndex_t i=p.bkpSpecBegin;i<p.bkpSpecEnd;++i) {
-#ifdef DEBUG
+#ifdef PROVDEBUG
 				if(sharing[itb->idx*numLinks+itp->idx][i]) {
 					std::cerr<<i<<'\n'<<
 							(sharing[itb->idx*numLinks+itp->idx]).to_string('_','X')<<'\n';
@@ -175,6 +176,7 @@ specIndex_t NetworkState::getUsedSpectrum(linkIndex_t l) const {
 	return anyUse[l].count();
 }
 
+#ifdef PROVDEBUG
 void NetworkState::sanityCheck(
 		const std::multimap<unsigned long, Provisioning>& conns) const {
 	unsigned int totalHops=0;
@@ -206,6 +208,7 @@ void NetworkState::sanityCheck(
 		assert(anyUse[b]==anyUseTest);
 	}
 }
+#endif
 
 uint64_t NetworkState::getCurrentBkpBw() const {
 	return currentBkpBw;
