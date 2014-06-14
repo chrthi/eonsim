@@ -54,7 +54,7 @@ KsqHybridCostProvisioning::KsqHybridCostProvisioning(
 		k_bkp(DEFAULT_K),
 		c_cut(DEFAULT_WEIGHT),
 		c_algn(DEFAULT_WEIGHT),
-		c_sep(DEFAULT_WEIGHT)
+		c_fsb(DEFAULT_WEIGHT)
 {
 	auto it=p.find("k");
 	if(it!=p.end())	k_pri=k_bkp=lrint(it->second);
@@ -66,13 +66,13 @@ KsqHybridCostProvisioning::KsqHybridCostProvisioning(
 	if(it!=p.end())	k_bkp=lrint(it->second);
 
 	it=p.find("c_cut");
-	if(it!=p.end())	c_cut=it->second<=-3.0?0:pow(2.0,it->second);
+	if(it!=p.end())	c_cut=it->second;
 
 	it=p.find("c_algn");
-	if(it!=p.end())	c_algn=it->second<=-3.0?0:pow(2.0,it->second);
+	if(it!=p.end())	c_algn=it->second;
 
-	it=p.find("c_sep");
-	if(it!=p.end())	c_sep=it->second<=-3.5?0:pow(2.0,it->second);
+	it=p.find("c_fsb");
+	if(it!=p.end())	c_fsb=it->second;
 }
 
 KsqHybridCostProvisioning::~KsqHybridCostProvisioning() {
@@ -160,17 +160,17 @@ std::ostream& KsqHybridCostProvisioning::print(std::ostream& o) const {
 inline double KsqHybridCostProvisioning::costp(const NetworkGraph& g,
 		const NetworkState& s, const NetworkGraph::Path& pp, specIndex_t beginp,
 		specIndex_t endp) const {
-	return	(double)(  pp.size()*(endp-beginp))
+	return	 c_fsb *(  pp.size()*(endp-beginp))
 			+c_cut *(         s.calcCuts(g,pp,beginp,endp))
 			+c_algn*(s.calcMisalignments(g,pp,beginp,endp))
-			+c_sep *beginp*pp.size();
+			+       beginp*pp.size();
 }
 
 inline double KsqHybridCostProvisioning::costb(const NetworkGraph& g,
 		const NetworkState& s, const NetworkGraph::Path& pb, specIndex_t beginb,
 		specIndex_t endb) const {
-	return	(double)(    s.countFreeBlocks(pb,beginb,endb))
+	return	 c_fsb *(    s.countFreeBlocks(pb,beginb,endb))
 			+c_cut *(         s.calcCuts(g,pb,beginb,endb))
 			+c_algn*(s.calcMisalignments(g,pb,beginb,endb))
-			+c_sep *(NUM_SLOTS-endb)*pb.size();
+			+       (NUM_SLOTS-endb)*pb.size();
 }

@@ -46,7 +46,7 @@ private:
 			const NetworkGraph::Path &pp, specIndex_t beginp, specIndex_t endp) const;
 	double costb(const NetworkGraph &g, const NetworkState &s,
 			const NetworkGraph::Path &pb, specIndex_t beginb, specIndex_t endb) const;
-	double c_cut, c_algn, c_sep;
+	double c_cut, c_algn, c_fsb;
 };
 
 #endif /* KSQHYBRIDCOSTPROVISIONING_H_ */
