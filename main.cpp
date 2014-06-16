@@ -154,7 +154,7 @@ int main(int argc, char **argv) {
 	std::vector<std::thread> threadPool(vm["threads"].as<size_t>());
 	for(auto &t:threadPool) t=std::thread(worker,std::ref(g));
 
-	size_t resultIdx=0;
+	size_t resultIdx=jobs.getCurrentIteration();
 	std::string lastAlg("");
 	while(!jobs.isEnd() || resultIdx<jobs.getCurrentIteration()) {
 		bool printProgress=false;
