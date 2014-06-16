@@ -44,6 +44,7 @@ private:
 	static const paramDesc_t pdesc[];
 	unsigned int k_pri; ///< Number of paths to consider for the primary
 	unsigned int k_bkp; ///< Number of paths to consider for backup, per primary
+	unsigned int mode;
 #ifdef TEST_METRICS
 	typedef struct{
 		double m_sep, m_fsb, m_cut, m_algn;

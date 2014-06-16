@@ -52,6 +52,7 @@ KsqHybridCostProvisioning::KsqHybridCostProvisioning(
 ):
 		k_pri(DEFAULT_K),
 		k_bkp(DEFAULT_K),
+		mode(3),
 #ifdef TEST_METRICS
 		n(0),
 		mpsum({0}),
@@ -78,6 +79,9 @@ KsqHybridCostProvisioning::KsqHybridCostProvisioning(
 
 	it=p.find("c_fsb");
 	if(it!=p.end())	c_fsb=it->second;
+
+	it=p.find("mode");
+	if(it!=p.end())	mode=lrint(it->second);
 
 #ifdef TEST_METRICS
 	it=p.find("discard");
@@ -124,11 +128,16 @@ Provisioning KsqHybridCostProvisioning::operator ()(
 		for(specIndex_t i=0; i<=NUM_SLOTS-widthp; ++i) {
 			if(specp[i+widthp-1]) ++usedp;
 			if(!usedp) {
+				double c;
+				if(mode&1) {
 #ifdef TEST_METRICS
-				double c=costp(g,s,pp,i,i+widthp,mp);
+					c=costp(g,s,pp,i,i+widthp,mp);
 #else
-				double c=costp(g,s,pp,i,i+widthp);
+					c=costp(g,s,pp,i,i+widthp);
 #endif
+				} else {
+					c=i*pp.size();
+				}
 				if(c<coptp) {
 					ip=i;
 					coptp=c;
@@ -136,7 +145,7 @@ Provisioning KsqHybridCostProvisioning::operator ()(
 			}
 			if(specp[i]) --usedp;
 		}
-		if(ip==NUM_SLOTS) continue;
+		if(ip==NUM_SLOTS || coptp>copt) continue;
 
 		y.reset();
 		for(auto const &e:pp) data.weights[e.idx]=std::numeric_limits<distance_t>::max();
@@ -156,11 +165,16 @@ Provisioning KsqHybridCostProvisioning::operator ()(
 			for(specIndex_t ib=0; ib<=NUM_SLOTS-widthb; ++ib) {
 				if(specb[ib+widthb-1]) ++usedb;
 				if(!usedb) {
+					double c;
+					if(mode&2) {
 #ifdef TEST_METRICS
-					double c=coptp+costb(g,s,pb,ib,ib+widthb,mb);
+						c=coptp+costb(g,s,pb,ib,ib+widthb,mb);
 #else
-					double c=coptp+costb(g,s,pb,ib,ib+widthb);
+						c=coptp+costb(g,s,pb,ib,ib+widthb);
 #endif
+					} else {
+						c=(NUM_SLOTS-ib-widthb)*pb.size();
+					}
 					if(c<copt) {
 						result.state=Provisioning::SUCCESS;
 						result.priPath=pp;
