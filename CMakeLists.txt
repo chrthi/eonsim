@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(eonsim)
 
-find_package(Boost 1.55.0 REQUIRED COMPONENTS program_options)
+find_package(Boost 1.49.0 REQUIRED COMPONENTS program_options)
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 LINK_DIRECTORIES(${Boost_LIBRARY_DIRS})
 
