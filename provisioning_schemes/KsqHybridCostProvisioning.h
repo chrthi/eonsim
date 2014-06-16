@@ -30,6 +30,8 @@
 #include "../NetworkState.h"
 #include "ProvisioningScheme.h"
 
+//#define TEST_METRICS
+
 class KsqHybridCostProvisioning: public ProvisioningScheme {
 public:
 	KsqHybridCostProvisioning(const ParameterSet &p);
@@ -42,10 +44,22 @@ private:
 	static const paramDesc_t pdesc[];
 	unsigned int k_pri; ///< Number of paths to consider for the primary
 	unsigned int k_bkp; ///< Number of paths to consider for backup, per primary
+#ifdef TEST_METRICS
+	typedef struct{
+		double m_sep, m_fsb, m_cut, m_algn;
+	} metricvals_t;
+	int64_t n;
+	metricvals_t mpsum, mbsum;
+	double costp(const NetworkGraph &g, const NetworkState &s,
+			const NetworkGraph::Path &pp, specIndex_t beginp, specIndex_t endp, metricvals_t &m) const;
+	double costb(const NetworkGraph &g, const NetworkState &s,
+			const NetworkGraph::Path &pb, specIndex_t beginb, specIndex_t endb, metricvals_t &m) const;
+#else
 	double costp(const NetworkGraph &g, const NetworkState &s,
 			const NetworkGraph::Path &pp, specIndex_t beginp, specIndex_t endp) const;
 	double costb(const NetworkGraph &g, const NetworkState &s,
 			const NetworkGraph::Path &pb, specIndex_t beginb, specIndex_t endb) const;
+#endif
 	double c_cut, c_algn, c_fsb;
 };
 

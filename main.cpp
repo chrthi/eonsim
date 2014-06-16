@@ -119,11 +119,11 @@ int main(int argc, char **argv) {
 	}
 
 	std::cerr<<"Configured for "<<jobs.getTotalIterations()<<" iterations";
-	if(vm.count("skip")) {
+	if(vm.count("skip") && vm["skip"].as<size_t>()>0) {
 		size_t s=vm["skip"].as<size_t>();
 		std::cerr<<", skipping the first "<<s;
 		if(jobs.getTotalIterations()<=s) {
-			std::cerr<<" - this doesn't make sense."<<std::endl;
+			std::cerr<<" - that doesn't make sense."<<std::endl;
 			return -1;
 		}
 		for(size_t i=0; i<s; ++i) ++jobs;
