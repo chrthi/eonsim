@@ -69,6 +69,7 @@ void StatCounter::reset(const uint64_t discard) {
 	energy=0.0;
 	specUtil=0;
 	simTime=0;
+	discardedTime=0;
 }
 
 /**

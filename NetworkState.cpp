@@ -155,6 +155,7 @@ void NetworkState::reset() {
 	for(size_t i=0; i<numLinks; ++i) primaryUse[i].reset();
 	for(size_t i=0; i<numLinks; ++i) anyUse[i].reset();
 	for(size_t i=0; i<static_cast<size_t>(numLinks*numLinks); ++i) sharing[i].reset();
+	for(size_t i=0; i<sizeof(currentTxSlots)/sizeof(currentTxSlots[0]); ++i) currentTxSlots[i]=0;
 	currentBkpBw=0;
 }
 
