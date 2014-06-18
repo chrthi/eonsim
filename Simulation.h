@@ -33,6 +33,14 @@
 class ProvisioningScheme;
 class StatCounter;
 
+/**
+ * \brief Implementation of the event-driven simulation main loop.
+ *
+ * The run member function is called by the worker thread.
+ * The Simulation class maintains the random number generator and active
+ * connection list. To measure performance metrics, the simulation uses a
+ * StatCounter object.
+ */
 class Simulation {
 public:
 	Simulation(const NetworkGraph &topology);

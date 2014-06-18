@@ -40,22 +40,22 @@ JobIterator::JobIterator(const std::string &opts, const std::string &algs):
 	const char *p1=algs.c_str(), *p2, *end;
 	end=algs.end().operator ->();
 	globalopts.insert(std::make_pair("iters",
-			param_t({DEFAULT_SIM_ITERS,DEFAULT_SIM_ITERS,1.0,0})
+			paramRange_t({DEFAULT_SIM_ITERS,DEFAULT_SIM_ITERS,1.0,0})
 			));
 	globalopts.insert(std::make_pair("discard",
-			param_t({DEFAULT_SIM_DISCARD,DEFAULT_SIM_DISCARD,1.0,0})
+			paramRange_t({DEFAULT_SIM_DISCARD,DEFAULT_SIM_DISCARD,1.0,0})
 			));
 	globalopts.insert(std::make_pair("k",
-			param_t({DEFAULT_K,DEFAULT_K,1.0,0})
+			paramRange_t({DEFAULT_K,DEFAULT_K,1.0,0})
 			));
 	globalopts.insert(std::make_pair("load",
-			param_t({DEFAULT_LOAD_MIN,DEFAULT_LOAD_MAX,DEFAULT_LOAD_STEP,0})
+			paramRange_t({DEFAULT_LOAD_MIN,DEFAULT_LOAD_MAX,DEFAULT_LOAD_STEP,0})
 			));
 	globalopts.insert(std::make_pair("bwmin",
-			param_t({DEFAULT_BW_MIN,DEFAULT_BW_MIN,1.0,0})
+			paramRange_t({DEFAULT_BW_MIN,DEFAULT_BW_MIN,1.0,0})
 			));
 	globalopts.insert(std::make_pair("bwmax",
-			param_t({DEFAULT_BW_MAX,DEFAULT_BW_MAX,1.0,0})
+			paramRange_t({DEFAULT_BW_MAX,DEFAULT_BW_MAX,1.0,0})
 			));
 	p2=parseOpts(opts.c_str(),opts.end().operator ->(),globalopts);
 	if(p2!=opts.end().operator ->())

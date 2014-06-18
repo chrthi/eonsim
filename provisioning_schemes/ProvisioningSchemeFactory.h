@@ -30,6 +30,9 @@
 
 #include "ProvisioningScheme.h"
 
+/**
+ * \brief Creates instances of the heuristics based on the names supplied on the command line.
+ */
 class ProvisioningSchemeFactory {
 public:
 	~ProvisioningSchemeFactory();
@@ -42,6 +45,9 @@ private:
 	static ProvisioningSchemeFactory &getMutableInstance();
 	std::map<std::string, std::function<std::unique_ptr<ProvisioningScheme>(const ProvisioningScheme::ParameterSet &)>> factoryFunctionRegistry;
 public:
+	/**
+	 * \brief A helper object that, when constructed, registers the template parameter class with the ProvisioningSchemeFactory.
+	 */
 	template<class T> class Registrar {
 	public:
 		Registrar(const std::string &name) {

@@ -26,6 +26,9 @@
 #include <iostream>
 #include "ProvisioningScheme.h"
 
+/**
+ * \brief Implementation of the first-fit heuristic.
+ */
 class Shao2012FFProvisioning: public ProvisioningScheme {
 public:
 	Shao2012FFProvisioning(const ParameterSet &p);

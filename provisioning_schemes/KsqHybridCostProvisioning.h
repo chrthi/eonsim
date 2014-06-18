@@ -32,6 +32,9 @@
 
 //#define TEST_METRICS
 
+/**
+ * \brief Implementation of the $k^2$ shortest path heuristic with hybrid cost metric.
+ */
 class KsqHybridCostProvisioning: public ProvisioningScheme {
 public:
 	KsqHybridCostProvisioning(const ParameterSet &p);

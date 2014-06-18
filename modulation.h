@@ -37,11 +37,16 @@ enum modulation_t {
 
 extern const char *const modulation_names[MOD_NONE+1];
 
-extern const struct mod_properties_t {
+/**
+ * \brief Information about a modulation: Optical reach, bits per symbol.
+ */
+typedef struct mod_properties_t {
 	modulation_t m;
 	distance_t reach;
 	unsigned int bitPerSymbol;
-} modulations[MOD_NONE];
+};
+
+extern const struct mod_properties_t modulations[MOD_NONE];
 
 modulation_t calcModulation(distance_t reach);
 specIndex_t calcNumSlots(bandwidth_t bw, modulation_t mod);

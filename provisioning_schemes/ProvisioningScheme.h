@@ -29,6 +29,14 @@
 #include "../NetworkState.h"
 #include "../SimulationMsgs.h"
 
+/**
+ * \brief Interface of a provisioning heuristic.
+ *
+ * Classes that implement a heuristic should inherit from this class and define
+ * a ProvisioningSchemeFactory::Registrar object to register with the
+ * ProvisioningSchemeFactory. See one of the existing heuristics to see how this
+ * is done.
+ */
 class ProvisioningScheme {
 public:
 	typedef std::map<std::string,double> ParameterSet;
@@ -36,6 +44,9 @@ public:
 	virtual Provisioning operator()(const NetworkGraph &g, const NetworkState &s, const NetworkGraph::DijkstraData &data, const Request &r) =0;
 	friend std::ostream& operator<<(std::ostream& o, ProvisioningScheme const& s);
 protected:
+	/**
+	 * \brief Description of a parameter that a heuristic accepts; used for printing usage information.
+	 */
 	typedef struct{
 		const char *name;
 		const char *limits;

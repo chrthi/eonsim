@@ -30,6 +30,9 @@
 #include "NetworkState.h"
 #include "SimulationMsgs.h"
 
+/**
+ * \brief Keeps track of blocking statistics and performance metrics during a simulation run.
+ */
 class StatCounter {
 public:
 	StatCounter(const uint64_t discard);

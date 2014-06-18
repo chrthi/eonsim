@@ -8,3 +8,8 @@
 /.pydevproject
 gmon.out
 /doc
+next
+scripts/*.pdf
+scripts/*.tex
+scripts/*.eps
+scripts/*.m

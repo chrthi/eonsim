@@ -31,6 +31,9 @@
 #include "NetworkGraph.h"
 #include "SimulationMsgs.h"
 
+/**
+ * \brief Maintains the network's spectrum state during a simulation run.
+ */
 class NetworkState {
 public:
 	NetworkState(const NetworkGraph &topology);

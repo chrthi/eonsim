@@ -34,6 +34,13 @@
 
 #include "globaldef.h"
 
+/**
+ * \brief Holds the network graph structure and supports path search.
+ *
+ * There is one instance of NetworkGraph in the program that is shared by all
+ * threads. The graph is read from a text file and then remains constant,
+ * so there are no concurrency issues.
+ */
 class NetworkGraph {
 public:
 	static NetworkGraph loadFromMatrix(std::istream &s);
@@ -49,6 +56,12 @@ public:
 			linkIndex_t  //edge index type
 			> Graph;
 	Graph g;
+	/**
+	 * \brief Distance and predecessor matrices used by the Dijkstra algorithm.
+	 *
+	 * To avoid the memory allocation cost, a simulation object keeps a
+	 * DijkstraData object during the whole simulation run.
+	 */
 	class DijkstraData {
 	public:
 		DijkstraData(const NetworkGraph &g);
@@ -69,6 +82,9 @@ public:
 	Path dijkstra(Graph::vertex_descriptor s, Graph::vertex_descriptor d, const DijkstraData &data) const;
 	unsigned long getNumAmps() const;
 
+	/**
+	 * \brief Holds k-shortest path search state so that additional paths can be calculated later.
+	 */
 	class YenKShortestSearch{
 	public:
 		YenKShortestSearch(const NetworkGraph &g, Graph::vertex_descriptor s, Graph::vertex_descriptor d, const DijkstraData &data);

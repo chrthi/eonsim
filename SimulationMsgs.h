@@ -30,11 +30,19 @@
 #include "modulation.h"
 #include "NetworkGraph.h"
 
+/**
+ * \brief Input to the heuristics: A new connection request that specifies
+ * source, destination and bandwidth.
+ */
 struct Request{
 	NetworkGraph::Graph::vertex_descriptor source, dest;
 	unsigned int bandwidth;
 };
 
+/**
+ * \brief Return type of the heuristics: A path, modulation and spectrum
+ * assignment for primary and backup.
+ */
 struct Provisioning{
 	NetworkGraph::Path priPath;
 	specIndex_t priSpecBegin, priSpecEnd;

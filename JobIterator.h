@@ -30,6 +30,11 @@
 
 #include "provisioning_schemes/ProvisioningScheme.h"
 
+/**
+ * \brief Iterate over all specified parameter combinations for each specified algorithm.
+ *
+ * When dereferenced, the iterator returns a job_t packet that can be passed to the worker thread.
+ */
 class JobIterator {
 public:
 	JobIterator(const std::string &opts, const std::string &algs);
@@ -39,6 +44,9 @@ public:
 	double getParam(const std::string &name) const;
 	size_t getCurrentIteration() const;
 	size_t getTotalIterations() const;
+	/**
+	 * \brief A parameter set for a simulation run that can be passed to a Simulation object.
+	 */
 	typedef struct{
 		size_t index;
 		std::string algname;
@@ -46,13 +54,16 @@ public:
 	} job_t;
 	job_t operator*() const;
 private:
+	/**
+	 * \brief A range specification for a single parameter.
+	 */
 	typedef struct{
 		double min;
 		double max;
 		double step;
 		int current;
-	} param_t;
-	typedef std::map<std::string,param_t> optmap_t;
+	} paramRange_t;
+	typedef std::map<std::string,paramRange_t> optmap_t;
 	optmap_t globalopts;
 	std::vector<std::pair<std::string, optmap_t> > algopts;
 	std::vector<std::pair<std::string, optmap_t> >::const_iterator currentAlg;

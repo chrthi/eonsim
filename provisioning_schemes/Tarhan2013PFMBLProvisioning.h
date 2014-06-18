@@ -26,6 +26,9 @@
 #include <iostream>
 #include "ProvisioningScheme.h"
 
+/**
+ * \brief Implementation of the PF-MBL heuristic.
+ */
 class Tarhan2013PFMBLProvisioning: public ProvisioningScheme {
 public:
 	Tarhan2013PFMBLProvisioning(const ParameterSet &p);

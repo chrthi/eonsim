@@ -28,6 +28,9 @@
 
 struct Request;
 
+/**
+ * \brief Implementation of a simple heuristic that uses only the shortest paths and assigns spectrum by first-fit/last-fit.
+ */
 class ShortestFFLFProvisioning: public ProvisioningScheme {
 public:
 	ShortestFFLFProvisioning(const ParameterSet &p);

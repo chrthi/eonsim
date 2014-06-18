@@ -26,6 +26,9 @@
 #include <iostream>
 #include "ProvisioningScheme.h"
 
+/**
+ * \brief Implementation of the MFSB Heuristic.
+ */
 class Chen2013MFSBProvisioning: public ProvisioningScheme {
 public:
 	Chen2013MFSBProvisioning(const ParameterSet &p);
