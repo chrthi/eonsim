@@ -23,7 +23,7 @@
 #include "modulation.h"
 #include "globaldef.h"
 
-const struct mod_properties_t modulations[MOD_NONE]={
+const mod_properties_t modulations[MOD_NONE]={
 	{QAM64, static_cast<distance_t>( 125/DISTANCE_UNIT), 6},
 	{QAM32, static_cast<distance_t>( 250/DISTANCE_UNIT), 5},
 	{QAM16, static_cast<distance_t>( 500/DISTANCE_UNIT), 4},

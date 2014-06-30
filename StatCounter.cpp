@@ -30,19 +30,13 @@
 
 StatCounter::StatCounter(const uint64_t discard) :
 	discard(discard),
-	nBlockings(),
+	nBlocked(),
 	nProvisioned(),
 	nTerminated(),
 	bwBlocked(),
 	bwProvisioned(),
 	bwTerminated(),
-	sharability(),
-	fragmentation(),
-	energy(),
-	specUtil(),
-	numLinks(),
-	numNodes(),
-	numAmps(),
+	perf(),
 	simTime(),
 	discardedTime()
 {}
@@ -58,16 +52,13 @@ StatCounter::~StatCounter() {
  */
 void StatCounter::reset(const uint64_t discard) {
 	this->discard=discard;
-	std::fill(nBlockings,nBlockings+Provisioning::SUCCESS+1,0ul);
+	nBlocked=0;
 	nProvisioned=0;
 	nTerminated=0;
-	std::fill(bwBlocked,bwBlocked+Provisioning::SUCCESS+1,0ul);
+	bwBlocked=0;
 	bwProvisioned=0;
 	bwTerminated=0;
-	sharability=0.0;
-	fragmentation=0.0;
-	energy=0.0;
-	specUtil=0;
+	perf.reset();
 	simTime=0;
 	discardedTime=0;
 }
@@ -88,8 +79,8 @@ void StatCounter::countProvisioning(const Provisioning&p) {
 		++nProvisioned;
 		bwProvisioned+=p.bandwidth;
 	} else {
-		++nBlockings[p.state];
-		bwBlocked[p.state]+=p.bandwidth;
+		++nBlocked;
+		bwBlocked+=p.bandwidth;
 	}
 }
 
@@ -114,6 +105,10 @@ void StatCounter::countNetworkState(const NetworkGraph &g, const NetworkState& s
 	}
 	if(!discardedTime)
 		discardedTime=timestamp;
+	uint64_t deltaT=timestamp-simTime;
+	PerfMetrics p=s.getCurrentPerfMetrics();
+	perf+=p*deltaT;
+	/*
 	unsigned long int primary=s.getTotalPri();
 	unsigned long int anyUse=0;
 	if(!numLinks) {
@@ -130,12 +125,11 @@ void StatCounter::countNetworkState(const NetworkGraph &g, const NetworkState& s
 		if(NUM_SLOTS-used>0)
 			currentFrag+=1.0-(double)s.getLargestSegment(i)/(NUM_SLOTS-used);
 	}
-	uint64_t deltaT=timestamp-simTime;
 	fragmentation=fma(deltaT,currentFrag,fragmentation);
 	specUtil+=deltaT*anyUse;
 	if(anyUse-primary>0)
 		sharability=fma(deltaT,(double)s.getCurrentBkpBw()/(anyUse-primary),sharability);
-	simTime=timestamp;
+
 	const uint64_t *txslots=s.getCurrentTxSlots();
 	double eTx=     txslots[BPSK] * 47.13;
 	eTx=fma((double)txslots[QPSK] , 62.75,eTx);
@@ -147,71 +141,142 @@ void StatCounter::countNetworkState(const NetworkGraph &g, const NetworkState& s
 			deltaT,
 			eTx+(g.getNumAmps()-idleAmps)*30.0,
 			energy);
-}
-
-/**
- * Output an event type as human-readable text.
- * This provides an iostream output operator so that event types can be
- * conveniently streamed into files or console output.
- */
-std::ostream& operator<<(std::ostream &o, const Provisioning::state_t &e) {
-	switch(e) {
-	case Provisioning::BLOCK_PRI_NOPATH: return o<<"Blocked (no primary path)";
-	case Provisioning::BLOCK_PRI_NOSPEC: return o<<"Blocked (no primary spec)";
-	case Provisioning::BLOCK_SEC_NOPATH: return o<<"Blocked (no backup path) ";
-	case Provisioning::BLOCK_SEC_NOSPEC: return o<<"Blocked (no backup spec) ";
-	default: return o;
-	}
-	return o;
+	*/
+	simTime=timestamp;
 }
 
 /**
  * Output the statistics to a stream.
  */
 std::ostream& operator<<(std::ostream &o, const StatCounter &s) {
-	unsigned long events_sum=s.nProvisioned;
-	unsigned long bandwidth_sum=s.bwProvisioned;
-	for(int e=0; e<Provisioning::SUCCESS; ++e) {
-		events_sum+=s.nBlockings[e];
-		bandwidth_sum+=s.bwBlocked[e];
-	}
 
-	double p_static=
+	/*double p_static=
 			(s.numLinks/2)*85.0 + s.numNodes*150.0
 			+(s.numAmps/2)*140.0;
+	*/
 
 	uint64_t t=s.simTime-s.discardedTime;
+	StatCounter::PerfMetrics p=s.perf/t;
 
 	//When changing this, remember to change printTableHeader accordingly!
 	o		//Blocking probability
-			<< (double)(events_sum-s.nProvisioned)/events_sum<<TABLE_COL_SEPARATOR
+			<< (double)(s.nBlocked)/(s.nProvisioned+s.nBlocked)<<TABLE_COL_SEPARATOR
 			//Bandwidth blocking probability
-			<< (double)(bandwidth_sum-s.bwProvisioned)/bandwidth_sum<<TABLE_COL_SEPARATOR
+			<< (double)(s.bwBlocked)/(s.bwProvisioned+s.bwBlocked)<<TABLE_COL_SEPARATOR
 			//Sharability
-			<< s.sharability/t <<TABLE_COL_SEPARATOR
+			<< p.sharability <<TABLE_COL_SEPARATOR
 			//Fragmentation
-			<< s.fragmentation/(t*s.numLinks)<<TABLE_COL_SEPARATOR
+			<< p.priEnd   /(double)p.numLinks <<TABLE_COL_SEPARATOR
+			<< (double)NUM_SLOTS-(p.bkpBegin /(double)p.numLinks) <<TABLE_COL_SEPARATOR
+			<< p.priFrag  /(double)p.numLinks <<TABLE_COL_SEPARATOR
+			<< p.bkpFrag  /(double)p.numLinks <<TABLE_COL_SEPARATOR
+			<< p.totalFrag/(double)p.numLinks <<TABLE_COL_SEPARATOR
+			//Primary/backup spectrum collisions
+			<< p.collisions/(double)p.numLinks <<TABLE_COL_SEPARATOR
 			//Spectrum Utilization
-			<< (double) s.specUtil/(NUM_SLOTS*t*s.numLinks)<<TABLE_COL_SEPARATOR
-			//Primary-to-total blocking reason ratio
-			<< (double)(s.nBlockings[Provisioning::BLOCK_PRI_NOPATH]+s.nBlockings[Provisioning::BLOCK_PRI_NOSPEC])
-				/(events_sum-s.nProvisioned)<<TABLE_COL_SEPARATOR
-			<< p_static <<TABLE_COL_SEPARATOR
-			<< s.energy/t;
+			<< p.utilization/(double)(p.numLinks*NUM_SLOTS) <<TABLE_COL_SEPARATOR
+			//Static energy
+			<< p.e_stat <<TABLE_COL_SEPARATOR
+			//Dynamic energy
+			<< p.e_dyn;
 	return o;
 }
 
 const char* const StatCounter::tableHeader=
-			"\"Blocking probability\"" TABLE_COL_SEPARATOR
-			"\"Bandwidth blocking probability\"" TABLE_COL_SEPARATOR
-			"\"Sharability\"" TABLE_COL_SEPARATOR
-			"\"Fragmentation\"" TABLE_COL_SEPARATOR
-			"\"Spectrum Utilization\"" TABLE_COL_SEPARATOR
-			"\"Primary as blocking reason\"" TABLE_COL_SEPARATOR
+			"\"BP\"" TABLE_COL_SEPARATOR
+			"\"BBP\"" TABLE_COL_SEPARATOR
+			"\"Shar\"" TABLE_COL_SEPARATOR
+			"\"Pri width\"" TABLE_COL_SEPARATOR
+			"\"Bkp width\"" TABLE_COL_SEPARATOR
+			"\"Pri frag\"" TABLE_COL_SEPARATOR
+			"\"Bkp frag\"" TABLE_COL_SEPARATOR
+			"\"Total frag\"" TABLE_COL_SEPARATOR
+			"\"Pri/Bkp collisions\"" TABLE_COL_SEPARATOR
+			"\"Spec Util\"" TABLE_COL_SEPARATOR
 			"\"Static energy\"" TABLE_COL_SEPARATOR
 			"\"Dynamic energy\""
 			;
 
-uint64_t StatCounter::getProvisioned() const {
-	return nProvisioned;
+StatCounter::PerfMetrics::PerfMetrics():
+	sharability(),
+	priFrag(),
+	bkpFrag(),
+	totalFrag(),
+	priEnd(),
+	bkpBegin(),
+	collisions(),
+	utilization(),
+	e_stat(),
+	e_dyn(),
+	numLinks()
+{}
+
+void StatCounter::PerfMetrics::addLink(specIndex_t bkpBegin, double bkpFrag,
+		specIndex_t priEnd, double priFrag, double totalFrag) {
+	this->bkpBegin+=bkpBegin;
+	this->bkpFrag+=bkpFrag;
+	this->priEnd+=priEnd;
+	this->priFrag+=priFrag;
+	this->totalFrag+=totalFrag;
+	if(bkpBegin<=priEnd) collisions+=1.0;
+}
+
+void StatCounter::PerfMetrics::reset() {
+	sharability=0.0;
+	priFrag=0.0;
+	bkpFrag=0.0;
+	totalFrag=0.0;
+	priEnd=0.0;
+	bkpBegin=0.0;
+	collisions=0.0;
+	utilization=0.0;
+	e_stat=0.0;
+	e_dyn=0.0;
+}
+
+StatCounter::PerfMetrics StatCounter::PerfMetrics::operator *(double b) const {
+	PerfMetrics p;
+	p.sharability=sharability*b;
+	p.priFrag=priFrag*b;
+	p.bkpFrag=bkpFrag*b;
+	p.totalFrag=totalFrag*b;
+	p.priEnd=priEnd*b;
+	p.bkpBegin=bkpBegin*b;
+	p.collisions=collisions*b;
+	p.utilization=utilization*b;
+	p.e_stat=e_stat;
+	p.e_dyn=e_dyn*b;
+	p.numLinks=numLinks;
+	return p;
+}
+
+StatCounter::PerfMetrics StatCounter::PerfMetrics::operator /(double b) const {
+	PerfMetrics p;
+	p.sharability=sharability/b;
+	p.priFrag=priFrag/b;
+	p.bkpFrag=bkpFrag/b;
+	p.totalFrag=totalFrag/b;
+	p.priEnd=priEnd/b;
+	p.bkpBegin=bkpBegin/b;
+	p.collisions=collisions/b;
+	p.utilization=utilization/b;
+	p.e_stat=e_stat;
+	p.e_dyn=e_dyn/b;
+	p.numLinks=numLinks;
+	return p;
+}
+
+StatCounter::PerfMetrics& StatCounter::PerfMetrics::operator +=(const PerfMetrics& b) {
+	sharability+=b.sharability;
+	priFrag+=b.priFrag;
+	bkpFrag+=b.bkpFrag;
+	totalFrag+=b.totalFrag;
+	priEnd+=b.priEnd;
+	bkpBegin+=b.bkpBegin;
+	collisions+=b.collisions;
+	utilization+=b.utilization;
+	e_stat=b.e_stat;
+	e_dyn+=b.e_dyn;
+	numLinks=b.numLinks;
+	return *this;
 }

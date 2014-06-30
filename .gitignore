@@ -13,3 +13,4 @@ scripts/*.pdf
 scripts/*.tex
 scripts/*.eps
 scripts/*.m
+scripts/*.sh

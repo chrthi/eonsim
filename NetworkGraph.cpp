@@ -38,13 +38,11 @@ using namespace boost;
 NetworkGraph::NetworkGraph(edgeIterator edge_begin, edgeIterator edge_end,
 		Graph::vertices_size_type numverts, Graph::edges_size_type numedges, const std::vector<distance_t> &dists):
 		link_lengths(new distance_t[dists.size()]),
-		g(edges_are_sorted,edge_begin,edge_end,numverts,numedges),
-		numAmps()
+		g(edges_are_sorted,edge_begin,edge_end,numverts,numedges)
 {
 	distance_t *pd=const_cast<distance_t*>(link_lengths);
 	for(auto const &d:dists) {
 		*pd++=d;
-		numAmps+=lrint(ceil(d*DISTANCE_UNIT/AMP_DIST)+1);
 	}
 }
 
@@ -254,8 +252,4 @@ void NetworkGraph::YenKShortestSearch::reset(Graph::vertex_descriptor s, Graph::
 std::ostream & operator<<(std::ostream &os, const NetworkGraph::Path& p) {
 	for(auto const &e:p) os<<e.src<<'-';
 	return os;
-}
-
-unsigned long NetworkGraph::getNumAmps() const {
-	return numAmps;
 }

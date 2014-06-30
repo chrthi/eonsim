@@ -32,18 +32,27 @@
 
 //use this when testing new provisioning methods to check if they generate illegal provisionings.
 //Alternatively, compile with make -DPROVDEBUG
-//#define PROVDEBUG
+#define PROVDEBUG
 
 NetworkState::NetworkState(const NetworkGraph& topology) :
 numLinks(boost::num_edges(topology.g)),
 numNodes(boost::num_vertices(topology.g)),
+numAmps(),
 primaryUse(new spectrum_bits[numLinks]),
 anyUse(new spectrum_bits[numLinks]),
 sharing(new spectrum_bits[numLinks*numLinks]),
-currentBkpBw(0),
+currentPriSlots(0),
+currentBkpSlots(0),
+currentBkpLpSlots(0),
 currentSwitchings(0),
-currentTxSlots()
+currentTxSlots(),
+frag(new linkfrag_t[numLinks]),
+linkAmps(new unsigned short[numLinks])
 {
+	for(linkIndex_t i=0; i<numLinks; ++i) {
+		linkAmps[i]=lrint(ceil(topology.link_lengths[i]*DISTANCE_UNIT/AMP_DIST)+1);
+		numAmps+=linkAmps[i];
+	}
 }
 
 NetworkState::~NetworkState() {
@@ -53,68 +62,100 @@ NetworkState::~NetworkState() {
 }
 
 void NetworkState::provision(const Provisioning &p) {
-	typedef NetworkGraph::Path::const_iterator edgeIt;
-	for(edgeIt it=p.priPath.begin(); it!=p.priPath.end(); ++it) {
+	for(const auto &e:p.priPath) {
 		for(specIndex_t i=p.priSpecBegin;i<p.priSpecEnd;++i) {
 #ifdef PROVDEBUG
-			assert(!primaryUse[it->idx][i]);
-			assert(!anyUse[it->idx][i]);
+			assert(!primaryUse[e.idx][i]);
+			assert(!anyUse[e.idx][i]);
 #endif
-			primaryUse[it->idx][i]=true;
-			anyUse[it->idx][i]=true;
+			primaryUse[e.idx][i]=true;
+			anyUse[e.idx][i]=true;
 		}
+		if(frag[e.idx].priEnd<p.priSpecEnd)
+			frag[e.idx].priEnd=p.priSpecEnd;
 	}
-	for(edgeIt it=p.bkpPath.begin(); it!=p.bkpPath.end(); ++it)
+	for(const auto &eb:p.bkpPath) {
 		for(specIndex_t i=p.bkpSpecBegin;i<p.bkpSpecEnd;++i)
-			anyUse[it->idx][i]=true;
-	for(edgeIt itb=p.bkpPath.begin(); itb!=p.bkpPath.end(); ++itb)
-		for(edgeIt itp=p.priPath.begin(); itp!=p.priPath.end(); ++itp) {
+			if(!anyUse[eb.idx][i]) {
+				++currentBkpSlots;
+				anyUse[eb.idx][i]=true;
+			}
+		if(frag[eb.idx].bkpBegin>p.bkpSpecBegin)
+			frag[eb.idx].bkpBegin=p.bkpSpecBegin;
+		for(const auto &ep:p.priPath) {
 #ifdef PROVDEBUG
-			assert(itb->idx!=itp->idx);
+			assert(eb.idx!=ep.idx);
 #endif
+			auto &s=sharing[eb.idx*numLinks+ep.idx];
 			for(specIndex_t i=p.bkpSpecBegin;i<p.bkpSpecEnd;++i) {
 #ifdef PROVDEBUG
-				if(sharing[itb->idx*numLinks+itp->idx][i]) {
-					std::cerr<<i<<'\n'<<
-							(sharing[itb->idx*numLinks+itp->idx]).to_string('_','X')<<'\n';
+				if(s[i]) {
+					std::cerr<<i<<'\n'<<s.to_string('_','X')<<'\n';
 					std::cerr<<bkpAvailability(p.priPath,p.bkpPath).to_string('_','X')<<'\n';
 					assert(false);
 				}
 #endif
-				sharing[itb->idx*numLinks+itp->idx][i]=true;
+				s[i]=true;
 			}
 		}
-	currentBkpBw+=(p.bkpSpecEnd-p.bkpSpecBegin)*p.bkpPath.size();
+	}
+
+	updateLinkFrag(p.priPath);
+	updateLinkFrag(p.bkpPath);
+	currentBkpLpSlots+=(p.bkpSpecEnd-p.bkpSpecBegin)*p.bkpPath.size();
+	currentPriSlots+=(p.priSpecEnd-p.priSpecBegin)*p.priPath.size();
 	currentSwitchings+=p.priPath.size();
 	currentTxSlots[p.priMod]+=p.priSpecEnd-p.priSpecBegin;
 }
 
 void NetworkState::terminate(const Provisioning &p) {
-	typedef NetworkGraph::Path::const_iterator edgeIt;
-	for(edgeIt it=p.priPath.begin(); it!=p.priPath.end(); ++it) {
+	for(const auto &e:p.priPath) {
 		for(specIndex_t i=p.priSpecBegin;i<p.priSpecEnd;++i) {
-			primaryUse[it->idx][i]=false;
-			anyUse[it->idx][i]=false;
+			primaryUse[e.idx][i]=false;
+			anyUse[e.idx][i]=false;
+		}
+		if(frag[e.idx].priEnd==p.priSpecEnd) {
+			frag[e.idx].priEnd=0;
+			for(specIndex_t i=0; i<p.priSpecEnd; ++i)
+				if(primaryUse[e.idx][i]) frag[e.idx].priEnd=i;
 		}
 	}
 	//the primary links now do not share any backup here any more
-	for(edgeIt itb=p.bkpPath.begin(); itb!=p.bkpPath.end(); ++itb)
-		for(edgeIt itp=p.priPath.begin(); itp!=p.priPath.end(); ++itp)
+	for(const auto &eb:p.bkpPath)
+		for(const auto &ep:p.priPath)
 			for(specIndex_t i=p.bkpSpecBegin;i<p.bkpSpecEnd;++i)
-				sharing[itb->idx*numLinks+itp->idx][i]=false;
+				sharing[eb.idx*numLinks+ep.idx][i]=false;
 
 	/* On each previous backup link, construct the new backup spectrum
 	 * by checking all other links' sharing entries.
 	 * Takes a huge O(bkpLen*numLinks*numSlots).
 	 * This is a possible downside of the sharing matrix implementation.
 	 */
-	for(edgeIt itb=p.bkpPath.begin(); itb!=p.bkpPath.end(); ++itb) {
-		anyUse[itb->idx]=primaryUse[itb->idx];
-		spectrum_bits * const shb=sharing+itb->idx*numLinks;
-		for(linkIndex_t i=0; i<numLinks; ++i)
-			anyUse[itb->idx]|=shb[i];
+	for(const auto &eb:p.bkpPath) {
+		anyUse[eb.idx]=primaryUse[eb.idx];
+		spectrum_bits * const shb=sharing+eb.idx*numLinks;
+		spectrum_bits bkpUse=shb[0];
+		for(linkIndex_t i=1; i<numLinks; ++i)
+			bkpUse|=shb[i];
+		anyUse[eb.idx]|=bkpUse;
+
+		//account for the freed slots
+		for(specIndex_t i=p.bkpSpecBegin; i<p.bkpSpecEnd; ++i)
+			if(!bkpUse[i]) --currentBkpSlots;
+
+		//if the beginning of the backup spectrum has moved, find the new
+		//position.
+		if(frag[eb.idx].bkpBegin==p.bkpSpecBegin) {
+			frag[eb.idx].bkpBegin=NUM_SLOTS;
+			for(specIndex_t i=NUM_SLOTS; i>=p.bkpSpecBegin && i<=NUM_SLOTS; --i)
+				if(bkpUse[i]) frag[eb.idx].bkpBegin=i;
+		}
 	}
-	currentBkpBw-=(p.bkpSpecEnd-p.bkpSpecBegin)*p.bkpPath.size();
+
+	updateLinkFrag(p.priPath);
+	updateLinkFrag(p.bkpPath);
+	currentBkpLpSlots-=(p.bkpSpecEnd-p.bkpSpecBegin)*p.bkpPath.size();
+	currentPriSlots-=(p.priSpecEnd-p.priSpecBegin)*p.priPath.size();
 	currentSwitchings-=p.priPath.size();
 	currentTxSlots[p.priMod]-=p.priSpecEnd-p.priSpecBegin;
 }
@@ -155,26 +196,12 @@ void NetworkState::reset() {
 	for(size_t i=0; i<numLinks; ++i) primaryUse[i].reset();
 	for(size_t i=0; i<numLinks; ++i) anyUse[i].reset();
 	for(size_t i=0; i<static_cast<size_t>(numLinks*numLinks); ++i) sharing[i].reset();
+	currentPriSlots=0;
+	currentBkpSlots=0;
+	currentBkpLpSlots=0;
+	currentSwitchings=0;
 	for(size_t i=0; i<sizeof(currentTxSlots)/sizeof(currentTxSlots[0]); ++i) currentTxSlots[i]=0;
-	currentBkpBw=0;
-}
-
-specIndex_t NetworkState::countFreeBlocks(const NetworkGraph::Path& bkpPath,
-		specIndex_t i) const {
-	specIndex_t result=0;
-	for(auto const &e:bkpPath)
-		if(!anyUse[e.idx][i]) ++result;
-	return result;
-}
-
-unsigned long NetworkState::getTotalPri() const {
-	unsigned long result=0;
-	for(size_t i=0; i<numLinks; ++i) result+=primaryUse[i].count();
-	return result;
-}
-
-specIndex_t NetworkState::getUsedSpectrum(linkIndex_t l) const {
-	return anyUse[l].count();
+	for(size_t i=0; i<numLinks; ++i) frag[i]=LinkFrag();
 }
 
 #ifdef PROVDEBUG
@@ -211,21 +238,6 @@ void NetworkState::sanityCheck(
 }
 #endif
 
-uint64_t NetworkState::getCurrentBkpBw() const {
-	return currentBkpBw;
-}
-
-specIndex_t NetworkState::getLargestSegment(linkIndex_t l) const {
-	specIndex_t result=0, count=0;
-	for(int i=0; i<NUM_SLOTS; ++i) {
-		if(anyUse[l][i])
-			count=0;
-		else if(++count>result)
-			result=count;
-	}
-	return result;
-}
-
 unsigned int NetworkState::calcCuts(const NetworkGraph& g,
 		const NetworkGraph::Path& p,
 		const specIndex_t begin, const specIndex_t end) const {
@@ -257,6 +269,14 @@ double NetworkState::calcMisalignments(const NetworkGraph& g,
 	return result;
 }
 
+unsigned int NetworkState::countFreeBlocks(const NetworkGraph::Path& bkpPath,
+		specIndex_t i) const {
+	specIndex_t result=0;
+	for(auto const &e:bkpPath)
+		if(!anyUse[e.idx][i]) ++result;
+	return result;
+}
+
 unsigned int NetworkState::countFreeBlocks(const NetworkGraph::Path& p,
 		const specIndex_t begin, const specIndex_t end) const {
 	unsigned int result=0;
@@ -266,27 +286,85 @@ unsigned int NetworkState::countFreeBlocks(const NetworkGraph::Path& p,
 	return result;
 }
 
-uint64_t NetworkState::getCurrentSwitchings() const {
-	return currentSwitchings;
+StatCounter::PerfMetrics NetworkState::getCurrentPerfMetrics() const {
+	StatCounter::PerfMetrics p;
+	p.utilization=(double)(currentPriSlots+currentBkpSlots);///(double)(numLinks*NUM_SLOTS);
+	p.sharability=(double)currentBkpLpSlots/(double)currentBkpSlots;
+	p.numLinks=numLinks;
+	unsigned long idleAmps=0;
+	for(linkIndex_t i=0; i<numLinks; ++i) {
+		p.addLink(frag[i].bkpBegin,frag[i].bkpFrag,
+				frag[i].priEnd,frag[i].priFrag,
+				frag[i].totalFrag);
+		if(frag[i].priEnd==0 && frag[i].bkpBegin==NUM_SLOTS)
+			idleAmps+=linkAmps[i];
+	}
+	p.e_stat=(numLinks/2)*85.0 + numNodes*150.0	+(numAmps/2)*140.0;
+	p.e_dyn+=(numAmps-idleAmps)*30.0;
+	p.e_dyn=fma((double)currentTxSlots[BPSK] , 47.13,p.e_dyn);
+	p.e_dyn=fma((double)currentTxSlots[QPSK] , 62.75,p.e_dyn);
+	p.e_dyn=fma((double)currentTxSlots[QAM8] , 78.38,p.e_dyn);
+	p.e_dyn=fma((double)currentTxSlots[QAM16], 94.00,p.e_dyn);
+	p.e_dyn=fma((double)currentTxSlots[QAM32],109.63,p.e_dyn);
+	p.e_dyn=fma((double)currentTxSlots[QAM64],125.23,p.e_dyn);
+	return p;
 }
 
-linkIndex_t NetworkState::getNumLinks() const {
-	return numLinks;
-}
+NetworkState::LinkFrag::LinkFrag():
+	priEnd(0),
+	bkpBegin(NUM_SLOTS),
+	priFrag(0.0),
+	bkpFrag(0.0),
+	totalFrag(0.0)
+{}
 
-nodeIndex_t NetworkState::getNumNodes() const {
-	return numNodes;
-}
+void NetworkState::updateLinkFrag(const NetworkGraph::Path& p) {
+	for(const auto &e:p) {
+		specIndex_t longestFree=0, totalLongestFree=0;
+		specIndex_t sectionTotalFree=0, totalFree=0;
+		specIndex_t c=0;
+		for(specIndex_t i=0; i<frag[e.idx].priEnd; ++i) {
+			if(!anyUse[e.idx][i]) {
+				++c;
+			}else if(c) {
+				if(c>longestFree) {
+					longestFree=c;
+				}
+				sectionTotalFree+=c;
+				c=0;
+			}
+		}
+		frag[e.idx].priFrag=sectionTotalFree?
+				1.0-(double)longestFree/(double)sectionTotalFree : 0.0;
+		totalFree=sectionTotalFree;
+		totalLongestFree=longestFree;
 
-const uint64_t* NetworkState::getCurrentTxSlots() const {
-	return currentTxSlots;
+		specIndex_t mid=0;
+		if(frag[e.idx].bkpBegin>frag[e.idx].priEnd) {
+			mid=frag[e.idx].bkpBegin-frag[e.idx].priEnd;
+			totalFree+=mid;
+			if(mid>totalLongestFree) totalLongestFree=mid;
+		}
+		c=0;
+		longestFree=0;
+		sectionTotalFree=0;
+		for(specIndex_t i=frag[e.idx].bkpBegin; i<NUM_SLOTS; ++i) {
+			if(!anyUse[e.idx][i]) {
+				++c;
+			}else if(c) {
+				if(c>longestFree) {
+					if(c>totalLongestFree) totalLongestFree=c;
+					longestFree=c;
+				}
+				sectionTotalFree+=c;
+				if(i>frag[e.idx].priEnd) totalFree+=c;
+				c=0;
+			}
+		}
+		if(longestFree>totalLongestFree) totalLongestFree=longestFree;
+		frag[e.idx].bkpFrag=sectionTotalFree?
+				1.0-(double)longestFree/(double)sectionTotalFree : 0.0;
+		frag[e.idx].totalFrag=sectionTotalFree?
+				1.0-(double)totalLongestFree/(double)totalFree : 0.0;
+	}
 }
-/*
- * Energy
- * Cicek's code:
-#define En_idle 150 //node idle power? / diff active-idle for a node
-#define E_transceiver 5.9 // 0.01 is receiver, 5.89 is transmitter
-#define E_switch 1.757 //switching energy, per connection and link
-#define E_Amp 9 // E_Amp*((length/80)+2)
-
- */

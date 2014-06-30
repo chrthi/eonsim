@@ -28,8 +28,10 @@
 #include <map>
 
 #include "globaldef.h"
+#include "modulation.h"
 #include "NetworkGraph.h"
 #include "SimulationMsgs.h"
+#include "StatCounter.h"
 
 /**
  * \brief Maintains the network's spectrum state during a simulation run.
@@ -49,30 +51,26 @@ public:
 	spectrum_bits bkpAvailability(
 			const NetworkGraph::Path &priPath,
 			const NetworkGraph::Path &bkpPath) const;
-	specIndex_t countFreeBlocks(const NetworkGraph::Path &bkpPath, specIndex_t i) const;
-	unsigned long getTotalPri() const;
-	specIndex_t getUsedSpectrum(linkIndex_t l) const;
-	specIndex_t getLargestSegment(linkIndex_t l) const;
+	StatCounter::PerfMetrics getCurrentPerfMetrics() const;
 
 	void sanityCheck(const std::multimap<unsigned long, Provisioning> &conns) const;
 
-	uint64_t getCurrentBkpBw() const;
+	//uint64_t getCurrentBkpBw() const;
 
 	unsigned int calcCuts(const NetworkGraph& g, const NetworkGraph::Path &p,
 			const specIndex_t begin, const specIndex_t end) const;
 	double calcMisalignments(const NetworkGraph& g, const NetworkGraph::Path &p,
 			const specIndex_t begin, const specIndex_t end) const;
+	unsigned int countFreeBlocks(const NetworkGraph::Path& bkpPath,
+			specIndex_t i) const;
 	unsigned int countFreeBlocks(const NetworkGraph::Path &p,
 			const specIndex_t begin, const specIndex_t end) const;
-	uint64_t getCurrentSwitchings() const;
-	const uint64_t* getCurrentTxSlots() const;
-	linkIndex_t getNumLinks() const;
-	nodeIndex_t getNumNodes() const;
 
 private:
 	NetworkState(const NetworkState &n);
 	linkIndex_t numLinks;
 	nodeIndex_t numNodes;
+	unsigned long numAmps;
 	spectrum_bits *primaryUse;
 	spectrum_bits *anyUse;
 	/**
@@ -81,9 +79,19 @@ private:
 	 * the backup spectrum in link i that protects primaries in j.
 	 */
 	spectrum_bits *sharing;
-	uint64_t currentBkpBw;
-	uint64_t currentSwitchings; ///< sum of all current primary connection's hop counts
+	uint64_t currentPriSlots;
+	uint64_t currentBkpSlots;
+	uint64_t currentBkpLpSlots;
+	uint64_t currentSwitchings; ///< sum of all current primary connections' hop counts
 	uint64_t currentTxSlots[MOD_NONE];
+	typedef struct LinkFrag{
+		specIndex_t priEnd, bkpBegin;
+		double priFrag, bkpFrag, totalFrag;
+		LinkFrag();
+	} linkfrag_t;
+	linkfrag_t *frag;
+	unsigned short *linkAmps;
+	void updateLinkFrag(const NetworkGraph::Path &p);
 };
 
 #endif /* NETWORKSTATE_H_ */

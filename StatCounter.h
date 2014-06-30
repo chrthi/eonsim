@@ -27,8 +27,10 @@
 #include <iostream>
 
 #include "globaldef.h"
-#include "NetworkState.h"
+#include "NetworkGraph.h"
 #include "SimulationMsgs.h"
+
+class NetworkState;
 
 /**
  * \brief Keeps track of blocking statistics and performance metrics during a simulation run.
@@ -43,8 +45,23 @@ public:
 	void countNetworkState(const NetworkGraph &g, const NetworkState &s, uint64_t timestamp);
 	friend std::ostream& operator<<(std::ostream &o, const StatCounter &s);
 	static const char* const tableHeader;
-	uint64_t getProvisioned() const;
-
+	struct PerfMetrics{
+		double sharability;
+		double priFrag, bkpFrag, totalFrag;
+		double priEnd, bkpBegin;
+		double collisions;
+		double utilization;
+		double e_stat;
+		double e_dyn;
+		linkIndex_t numLinks;
+		PerfMetrics();
+		void addLink(specIndex_t bkpBegin, double bkpFrag, specIndex_t priEnd,
+				double priFrag, double totalFrag);
+		void reset();
+		PerfMetrics operator *(double b) const;
+		PerfMetrics operator /(double b) const;
+		PerfMetrics &operator +=(const PerfMetrics &b);
+	};
 private:
 	/**
 	 * The number of blocking or provisioning events to discard before counting starts.
@@ -54,24 +71,18 @@ private:
 	uint64_t discard;
 
 	/// Counters for each supported type of event.
-	uint64_t nBlockings[Provisioning::SUCCESS];
+	uint64_t nBlocked;
 	uint64_t nProvisioned; ///< Number of connections that were successfully provisioned.
 	uint64_t nTerminated; ///< Number of connections that were terminated.
 	/**
 	 * Bandwidth counters for each supported type of event.
 	 * At each event, one of these is increased by the amount of requested bandwidth.
 	 */
-	uint64_t bwBlocked[Provisioning::SUCCESS];
+	uint64_t bwBlocked;
 	uint64_t bwProvisioned; ///< Total bandwidth of connections that were successfully provisioned.
 	uint64_t bwTerminated; ///< Total bandwidth of connections that were terminated.
 
-	double sharability;
-	double fragmentation;
-	double energy;
-	uint64_t specUtil;
-	linkIndex_t numLinks;
-	nodeIndex_t numNodes;
-	unsigned long numAmps;
+	PerfMetrics perf;
 	uint64_t simTime, discardedTime;
 };
 

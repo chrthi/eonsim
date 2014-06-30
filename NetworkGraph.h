@@ -80,7 +80,6 @@ public:
 
 	void printAsDot(std::ostream &s) const;
 	Path dijkstra(Graph::vertex_descriptor s, Graph::vertex_descriptor d, const DijkstraData &data) const;
-	unsigned long getNumAmps() const;
 
 	/**
 	 * \brief Holds k-shortest path search state so that additional paths can be calculated later.
@@ -105,7 +104,6 @@ private:
 	typedef std::vector<std::pair<nodeIndex_t, nodeIndex_t> >::iterator edgeIterator;
 	NetworkGraph(edgeIterator edge_begin, edgeIterator edge_end,
 			Graph::vertices_size_type numverts, Graph::edges_size_type numedges, const std::vector<distance_t> &dists);
-	unsigned long numAmps;
 };
 
 std::ostream & operator<<(std::ostream &os, const NetworkGraph::Path& p);

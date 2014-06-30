@@ -40,13 +40,13 @@ extern const char *const modulation_names[MOD_NONE+1];
 /**
  * \brief Information about a modulation: Optical reach, bits per symbol.
  */
-typedef struct mod_properties_t {
+typedef struct ModProperties{
 	modulation_t m;
 	distance_t reach;
 	unsigned int bitPerSymbol;
-};
+} mod_properties_t;
 
-extern const struct mod_properties_t modulations[MOD_NONE];
+extern const mod_properties_t modulations[MOD_NONE];
 
 modulation_t calcModulation(distance_t reach);
 specIndex_t calcNumSlots(bandwidth_t bw, modulation_t mod);
