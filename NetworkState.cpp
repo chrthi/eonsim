@@ -44,7 +44,6 @@ sharing(new spectrum_bits[numLinks*numLinks]),
 currentPriSlots(0),
 currentBkpSlots(0),
 currentBkpLpSlots(0),
-currentSwitchings(0),
 currentTxSlots(),
 frag(new linkfrag_t[numLinks]),
 linkAmps(new unsigned short[numLinks])
@@ -104,7 +103,6 @@ void NetworkState::provision(const Provisioning &p) {
 	updateLinkFrag(p.bkpPath);
 	currentBkpLpSlots+=(p.bkpSpecEnd-p.bkpSpecBegin)*p.bkpPath.size();
 	currentPriSlots+=(p.priSpecEnd-p.priSpecBegin)*p.priPath.size();
-	currentSwitchings+=p.priPath.size();
 	currentTxSlots[p.priMod]+=p.priSpecEnd-p.priSpecBegin;
 }
 
@@ -156,7 +154,6 @@ void NetworkState::terminate(const Provisioning &p) {
 	updateLinkFrag(p.bkpPath);
 	currentBkpLpSlots-=(p.bkpSpecEnd-p.bkpSpecBegin)*p.bkpPath.size();
 	currentPriSlots-=(p.priSpecEnd-p.priSpecBegin)*p.priPath.size();
-	currentSwitchings-=p.priPath.size();
 	currentTxSlots[p.priMod]-=p.priSpecEnd-p.priSpecBegin;
 }
 
@@ -199,7 +196,6 @@ void NetworkState::reset() {
 	currentPriSlots=0;
 	currentBkpSlots=0;
 	currentBkpLpSlots=0;
-	currentSwitchings=0;
 	for(size_t i=0; i<sizeof(currentTxSlots)/sizeof(currentTxSlots[0]); ++i) currentTxSlots[i]=0;
 	for(size_t i=0; i<numLinks; ++i) frag[i]=LinkFrag();
 }
