@@ -20,8 +20,12 @@
  * along with eonsim.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+//use this when testing new provisioning methods to check if they generate illegal provisionings.
+//#undef NDEBUG
+
 #include "NetworkState.h"
 
+#include <assert.h>
 #include <boost/graph/compressed_sparse_row_graph.hpp>
 #include <boost/graph/graph_traits.hpp>
 #include <iterator>
@@ -29,10 +33,6 @@
 
 #include "NetworkGraph.h"
 #include "Simulation.h"
-
-//use this when testing new provisioning methods to check if they generate illegal provisionings.
-//Alternatively, compile with make -DPROVDEBUG
-#define PROVDEBUG
 
 NetworkState::NetworkState(const NetworkGraph& topology) :
 numLinks(boost::num_edges(topology.g)),
@@ -44,7 +44,6 @@ sharing(new spectrum_bits[numLinks*numLinks]),
 currentPriSlots(0),
 currentBkpSlots(0),
 currentBkpLpSlots(0),
-currentSwitchings(0),
 currentTxSlots(),
 frag(new linkfrag_t[numLinks]),
 linkAmps(new unsigned short[numLinks])
@@ -64,7 +63,7 @@ NetworkState::~NetworkState() {
 void NetworkState::provision(const Provisioning &p) {
 	for(const auto &e:p.priPath) {
 		for(specIndex_t i=p.priSpecBegin;i<p.priSpecEnd;++i) {
-#ifdef PROVDEBUG
+#ifndef NDEBUG
 			assert(!primaryUse[e.idx][i]);
 			assert(!anyUse[e.idx][i]);
 #endif
@@ -83,12 +82,12 @@ void NetworkState::provision(const Provisioning &p) {
 		if(frag[eb.idx].bkpBegin>p.bkpSpecBegin)
 			frag[eb.idx].bkpBegin=p.bkpSpecBegin;
 		for(const auto &ep:p.priPath) {
-#ifdef PROVDEBUG
+#ifndef NDEBUG
 			assert(eb.idx!=ep.idx);
 #endif
 			auto &s=sharing[eb.idx*numLinks+ep.idx];
 			for(specIndex_t i=p.bkpSpecBegin;i<p.bkpSpecEnd;++i) {
-#ifdef PROVDEBUG
+#ifndef NDEBUG
 				if(s[i]) {
 					std::cerr<<i<<'\n'<<s.to_string('_','X')<<'\n';
 					std::cerr<<bkpAvailability(p.priPath,p.bkpPath).to_string('_','X')<<'\n';
@@ -104,7 +103,6 @@ void NetworkState::provision(const Provisioning &p) {
 	updateLinkFrag(p.bkpPath);
 	currentBkpLpSlots+=(p.bkpSpecEnd-p.bkpSpecBegin)*p.bkpPath.size();
 	currentPriSlots+=(p.priSpecEnd-p.priSpecBegin)*p.priPath.size();
-	currentSwitchings+=p.priPath.size();
 	currentTxSlots[p.priMod]+=p.priSpecEnd-p.priSpecBegin;
 }
 
@@ -156,7 +154,6 @@ void NetworkState::terminate(const Provisioning &p) {
 	updateLinkFrag(p.bkpPath);
 	currentBkpLpSlots-=(p.bkpSpecEnd-p.bkpSpecBegin)*p.bkpPath.size();
 	currentPriSlots-=(p.priSpecEnd-p.priSpecBegin)*p.priPath.size();
-	currentSwitchings-=p.priPath.size();
 	currentTxSlots[p.priMod]-=p.priSpecEnd-p.priSpecBegin;
 }
 
@@ -199,12 +196,11 @@ void NetworkState::reset() {
 	currentPriSlots=0;
 	currentBkpSlots=0;
 	currentBkpLpSlots=0;
-	currentSwitchings=0;
 	for(size_t i=0; i<sizeof(currentTxSlots)/sizeof(currentTxSlots[0]); ++i) currentTxSlots[i]=0;
 	for(size_t i=0; i<numLinks; ++i) frag[i]=LinkFrag();
 }
 
-#ifdef PROVDEBUG
+#ifndef NDEBUG
 void NetworkState::sanityCheck(
 		const std::multimap<unsigned long, Provisioning>& conns) const {
 	unsigned int totalHops=0;

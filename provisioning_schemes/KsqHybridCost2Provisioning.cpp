@@ -1,5 +1,5 @@
 /**
- * @file KsqHybridCostProvisioning.cpp
+ * @file KsqHybridCost2Provisioning.cpp
  *
  */
 
@@ -20,16 +20,16 @@
  * along with eonsim.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "KsqHybridCostProvisioning.h"
+#include "KsqHybridCost2Provisioning.h"
 #include "ProvisioningSchemeFactory.h"
 
 #define DEFAULT_WEIGHT 1.0
 
 /// by construction, this registers the class in the ProvisioningSchemeFactory factory.
-static const ProvisioningSchemeFactory::Registrar<KsqHybridCostProvisioning> _reg("ksqold");
-const char *const KsqHybridCostProvisioning::helpstr=
-		"The k-squared hybrid heuristic (same cost metrics)";
-const ProvisioningScheme::paramDesc_t KsqHybridCostProvisioning::pdesc[]={
+static const ProvisioningSchemeFactory::Registrar<KsqHybridCost2Provisioning> _reg("ksq");
+const char *const KsqHybridCost2Provisioning::helpstr=
+		"The k-squared hybrid heuristic (separate cost metrics)";
+const ProvisioningScheme::paramDesc_t KsqHybridCost2Provisioning::pdesc[]={
 		{"k",      "0<k",      XSTR(DEFAULT_K),
 				"Default value for k_pri and k_bkp"},
 		{"k_pri",  "0<k_pri",  "k",
@@ -42,17 +42,14 @@ const ProvisioningScheme::paramDesc_t KsqHybridCostProvisioning::pdesc[]={
 				"Weight of the \"Misalignment\" metric"},
 		{"c_fsb",  "0<=c_fsb", XSTR(DEFAULT_WEIGHT),
 				"Weight of the \"free spectrum block\" metric"},
-		{"mode",   "{1,2,3}",    "3",
-				"Consider the hybrid metric for (1) Primary, (2) Backup, (3) both"},
 		{0,0,0,0}
 };
 
-KsqHybridCostProvisioning::KsqHybridCostProvisioning(
+KsqHybridCost2Provisioning::KsqHybridCost2Provisioning(
 		const ProvisioningScheme::ParameterSet &p
 ):
 		k_pri(DEFAULT_K),
 		k_bkp(DEFAULT_K),
-		mode(3),
 #ifdef TEST_METRICS
 		n(0),
 		mpsum({0}),
@@ -80,27 +77,24 @@ KsqHybridCostProvisioning::KsqHybridCostProvisioning(
 	it=p.find("c_fsb");
 	if(it!=p.end())	c_fsb=it->second;
 
-	it=p.find("mode");
-	if(it!=p.end())	mode=lrint(it->second);
-
 #ifdef TEST_METRICS
 	it=p.find("discard");
 	if(it!=p.end())	n=0-lrint(it->second);
 #endif
 }
 
-KsqHybridCostProvisioning::~KsqHybridCostProvisioning() {
+KsqHybridCost2Provisioning::~KsqHybridCost2Provisioning() {
 #ifdef TEST_METRICS
 	std::cerr<<"Primary: "
-			<< mpsum.m_sep/n <<"; "<< mpsum.m_fsb/n <<"; "
-			<< mpsum.m_cut/n <<"; "<< mpsum.m_algn/n <<std::endl;
+			<< mpsum.m_sep/n <<"; "<< mpsum.m_algn/n <<"; "
+			<< mpsum.m_cut/n <<"; "<< mpsum.m_fsb/n <<std::endl;
 	std::cerr<<"Backup:  "
-			<< mbsum.m_sep/n <<"; "<< mbsum.m_fsb/n <<"; "
-			<< mbsum.m_cut/n <<"; "<< mbsum.m_algn/n <<std::endl;
+			<< mbsum.m_sep/n <<"; "<< mbsum.m_algn/n <<"; "
+			<< mbsum.m_cut/n <<"; "<< mbsum.m_fsb/n <<std::endl;
 #endif
 }
 
-Provisioning KsqHybridCostProvisioning::operator ()(
+Provisioning KsqHybridCost2Provisioning::operator ()(
 		const NetworkGraph& g, const NetworkState& s, const NetworkGraph::DijkstraData &data,
 		const Request& r) {
 #ifdef TEST_METRICS
@@ -129,15 +123,11 @@ Provisioning KsqHybridCostProvisioning::operator ()(
 			if(specp[i+widthp-1]) ++usedp;
 			if(!usedp) {
 				double c;
-				if(mode&1) {
 #ifdef TEST_METRICS
-					c=costp(g,s,pp,i,i+widthp,mp);
+				c=costp(g,s,pp,i,i+widthp,mp);
 #else
-					c=costp(g,s,pp,i,i+widthp);
+				c=costp(g,s,pp,i,i+widthp);
 #endif
-				} else {
-					c=i*pp.size();
-				}
 				if(c<coptp) {
 					ip=i;
 					coptp=c;
@@ -166,15 +156,11 @@ Provisioning KsqHybridCostProvisioning::operator ()(
 				if(specb[ib+widthb-1]) ++usedb;
 				if(!usedb) {
 					double c;
-					if(mode&2) {
 #ifdef TEST_METRICS
-						c=coptp+costb(g,s,pb,ib,ib+widthb,mb);
+					c=coptp+costb(g,s,pb,ib,ib+widthb,mb);
 #else
-						c=coptp+costb(g,s,pb,ib,ib+widthb);
+					c=coptp+costb(g,s,pb,ib,ib+widthb);
 #endif
-					} else {
-						c=(NUM_SLOTS-ib-widthb)*pb.size();
-					}
 					if(c<copt) {
 						result.state=Provisioning::SUCCESS;
 						result.priPath=pp;
@@ -212,32 +198,30 @@ Provisioning KsqHybridCostProvisioning::operator ()(
 	return result;
 }
 
-std::ostream& KsqHybridCostProvisioning::print(std::ostream& o) const {
+std::ostream& KsqHybridCost2Provisioning::print(std::ostream& o) const {
 	return printFormatted(o,helpstr,pdesc);
 }
 
 #ifdef TEST_METRICS
 
-inline double KsqHybridCostProvisioning::costp(const NetworkGraph& g,
+inline double KsqHybridCost2Provisioning::costp(const NetworkGraph& g,
 		const NetworkState& s, const NetworkGraph::Path& pp, specIndex_t beginp,
 		specIndex_t endp, metricvals_t &m) const {
 	m.m_fsb=pp.size()*(endp-beginp);
 	m.m_cut=s.calcCuts(g,pp,beginp,endp);
 	m.m_algn=s.calcMisalignments(g,pp,beginp,endp);
 	m.m_sep=beginp*pp.size();
-	return    c_fsb  * m.m_fsb
-			+ c_cut  * m.m_cut
+	return    c_cut  * m.m_cut
 			+ c_algn * m.m_algn
 			+          m.m_sep;
 	/*
-	return	 c_fsb *(  pp.size()*(endp-beginp))
-			+c_cut *(         s.calcCuts(g,pp,beginp,endp))
+	return	 c_cut *(         s.calcCuts(g,pp,beginp,endp))
 			+c_algn*(s.calcMisalignments(g,pp,beginp,endp))
 			+       beginp*pp.size();
 	*/
 }
 
-inline double KsqHybridCostProvisioning::costb(const NetworkGraph& g,
+inline double KsqHybridCost2Provisioning::costb(const NetworkGraph& g,
 		const NetworkState& s, const NetworkGraph::Path& pb, specIndex_t beginb,
 		specIndex_t endb, metricvals_t &m) const {
 	m.m_fsb=s.countFreeBlocks(pb,beginb,endb);
@@ -245,34 +229,27 @@ inline double KsqHybridCostProvisioning::costb(const NetworkGraph& g,
 	m.m_algn=s.calcMisalignments(g,pb,beginb,endb);
 	m.m_sep=(NUM_SLOTS-endb)*pb.size();
 	return    c_fsb  * m.m_fsb
-			+ c_cut  * m.m_cut
-			+ c_algn * m.m_algn
 			+          m.m_sep;
 	/*
 	return	 c_fsb *(    s.countFreeBlocks(pb,beginb,endb))
-			+c_cut *(         s.calcCuts(g,pb,beginb,endb))
-			+c_algn*(s.calcMisalignments(g,pb,beginb,endb))
 			+       (NUM_SLOTS-endb)*pb.size();
 	*/
 }
 
 #else
 
-inline double KsqHybridCostProvisioning::costp(const NetworkGraph& g,
+inline double KsqHybridCost2Provisioning::costp(const NetworkGraph& g,
 		const NetworkState& s, const NetworkGraph::Path& pp, specIndex_t beginp,
 		specIndex_t endp) const {
-	return	 c_fsb *(  pp.size()*(endp-beginp))
-			+c_cut *(         s.calcCuts(g,pp,beginp,endp))
+	return	 c_cut *(         s.calcCuts(g,pp,beginp,endp))
 			+c_algn*(s.calcMisalignments(g,pp,beginp,endp))
 			+       beginp*pp.size();
 }
 
-inline double KsqHybridCostProvisioning::costb(const NetworkGraph& g,
+inline double KsqHybridCost2Provisioning::costb(const NetworkGraph& g,
 		const NetworkState& s, const NetworkGraph::Path& pb, specIndex_t beginb,
 		specIndex_t endb) const {
 	return	 c_fsb *(    s.countFreeBlocks(pb,beginb,endb))
-			+c_cut *(         s.calcCuts(g,pb,beginb,endb))
-			+c_algn*(s.calcMisalignments(g,pb,beginb,endb))
 			+       (NUM_SLOTS-endb)*pb.size();
 }
 

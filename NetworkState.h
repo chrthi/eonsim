@@ -82,7 +82,6 @@ private:
 	uint64_t currentPriSlots;
 	uint64_t currentBkpSlots;
 	uint64_t currentBkpLpSlots;
-	uint64_t currentSwitchings; ///< sum of all current primary connections' hop counts
 	uint64_t currentTxSlots[MOD_NONE];
 	typedef struct LinkFrag{
 		specIndex_t priEnd, bkpBegin;
