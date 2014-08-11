@@ -173,7 +173,7 @@ Provisioning KsqHybridCostProvisioning::operator ()(
 						c=coptp+costb(g,s,pb,ib,ib+widthb);
 #endif
 					} else {
-						c=(NUM_SLOTS-ib-widthb)*pb.size();
+						c=coptp+(NUM_SLOTS-ib-widthb)*pb.size();
 					}
 					if(c<copt) {
 						result.state=Provisioning::SUCCESS;
