@@ -2,7 +2,7 @@ eonsim {#mainpage}
 ======
 
 eonsim is an event-driven traffic simulator for dynamic shared-path protected provisioning in elastic optical networks. It is designed for testing different provisioning heuristics.
-It has been developed as part of a master thesis project. For background information, see the thesis document which will be linked here as soon as it is made public.
+It has been developed as part of a master thesis project. For background information, see the thesis document at [urn:nbn:se:kth:diva-155684](http://urn.kb.se/resolve?urn=urn%3Anbn%3Ase%3Akth%3Adiva-155684)
 
 Building
 --------
